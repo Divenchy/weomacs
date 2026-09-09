@@ -22,8 +22,6 @@
   (add-to-list 'major-mode-remap-alist '(csharp-mode . csharp-ts-mode)))
 (when (treesit-available-p)
   (add-to-list 'major-mode-remap-alist '(yaml-mode . yaml-ts-mode)))
-(when (treesit-available-p)
-  (add-to-list 'major-mode-remap-alist '(zig-mode . zig-ts-mode)))
 
 ;; M-x package-vc-install RET https://github.com/mattt-b/odin-mode RET
 (use-package odin-ts-mode
@@ -123,7 +121,7 @@
   
   :hook
   ((glsl-mode . lsp-deferred)
-   (zig-ts-mode . lsp-deferred)
+   (zig-mode . lsp-deferred)
    (c-mode . lsp-deferred)
    (nix-ts-mode . lsp-deferred)
    (csharp-ts-mode . lsp-deferred)
@@ -157,8 +155,8 @@
   (add-to-list 'lsp-language-id-configuration '(yaml-ts-mode . "yaml"))
   (add-to-list 'lsp-language-id-configuration '(json-ts-mode . "json"))
   (add-to-list 'lsp-language-id-configuration '(toml-ts-mode . "toml"))
-  (add-to-list 'lsp-language-id-configuration '(tsx-ts-mode . "typescriptreact")))
-
+  (add-to-list 'lsp-language-id-configuration '(tsx-ts-mode . "typescriptreact"))
+  (add-to-list 'lsp-language-id-configuration '(zig-mode . "zig")))
 
 ;; Debugging ;;
 (use-package dap-mode
