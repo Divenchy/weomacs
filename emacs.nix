@@ -20,7 +20,7 @@ in {
     rust-analyzer
     nil
     clang-tools
-    nodePackages.typescript-language-server
+    typescript-language-server
     
     yaml-language-server
     powershell-editor-services
