@@ -25,11 +25,9 @@
 
 ;; M-x package-vc-install RET https://github.com/mattt-b/odin-mode RET
 (use-package odin-ts-mode
-  :ensure t
   :mode "\\.odin\\'")
 
 (use-package glsl-mode
-  :ensure t
   :mode ("\\.vert\\'" "\\.frag\\'" "\\.geom\\'" 
          "\\.comp\\'" "\\.glsl\\'"))
 
@@ -70,7 +68,6 @@
       (back-to-indentation))))
 
 (use-package yaml-mode
-  :ensure t
   :mode ("\\.yml\\'" "\\.yaml\\'")
   :bind (:map yaml-mode-map
               ("TAB" . weo/yaml-cycle-indent)
@@ -90,7 +87,6 @@
             (local-set-key (kbd "C-i") #'weo/yaml-cycle-indent)))
 
 (use-package lsp-mode
-  :ensure t
   :init
   (setq lsp-keymap-prefix "C-c l")
   (setq lsp-enable-snippet t)
@@ -155,7 +151,6 @@
 
 ;; Debugging ;;
 (use-package dap-mode
-  :ensure t
   :after lsp-mode
   :config
   (dap-auto-configure-mode 1)
@@ -183,7 +178,6 @@
 
 ;;; Corfu - Completion UI
 (use-package corfu
-  :ensure t
   :custom
   (corfu-cycle t)                  ; Cycle through candidates
   (corfu-auto t)                   ; Enable auto completion
@@ -204,7 +198,6 @@
 
 ;;; Cape - Completion At Point Extensions
 (use-package cape
-  :ensure t
   :init
   ;; Add useful completion sources
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
@@ -220,7 +213,6 @@
 
 ;;; Kind-icon - Icons in completion (optional, nice to have)
 (use-package kind-icon
-  :ensure t
   :after corfu
   :custom
   (kind-icon-default-face 'corfu-default)
@@ -238,6 +230,5 @@
         (treesit-install-language-grammar lang)))))
 
 (use-package yasnippet
-  :ensure t
   :config
   (yas-global-mode 1))

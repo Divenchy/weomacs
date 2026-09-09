@@ -7,12 +7,10 @@
 
 ;; rainbow-delimiters
 (use-package rainbow-delimiters
-  :ensure t
   :hook (prog-mode . rainbow-delimiters-mode))
 
 ;; Which-key
 (use-package which-key
-  :ensure t
   :init (which-key-mode)
   :diminish which-key-mode
   :config
@@ -23,7 +21,6 @@
 
 ;; Helpful
 (use-package helpful
-  :ensure t
   :bind
   ([remap describe-function] . helpful-callable)
   ([remap describe-command] . helpful-command)
@@ -34,7 +31,6 @@
 
 ;;; Vertico - Vertical minibuffer completion
 (use-package vertico
-  :ensure t
   :init
   (vertico-mode)
   :custom
@@ -57,20 +53,17 @@
   (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package orderless
-  :ensure t
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
 ;;; Marginalia - Rich annotations
 (use-package marginalia
-  :ensure t
   :init
   (marginalia-mode))
 
 ;;; Consult - Enhanced search commands
 (use-package consult
-  :ensure t
   :bind (("C-s" . consult-line)           ; Better isearch
          ("C-x b" . consult-buffer)        ; Better switch-buffer
          ("M-g g" . consult-goto-line)
@@ -79,7 +72,6 @@
 
 ;;; Embark - Contextual actions
 (use-package embark
-  :ensure t
   :bind (("C-." . embark-act)
          ("C-;" . embark-dwim)
 	 ("C-h B" . embark-bindings))
@@ -87,6 +79,5 @@
   (setq prefix-help-command #'embark-prefix-help-command))
 
 (use-package embark-consult
-  :ensure t
   :after (embark consult)
   :hook (embark-collect-mode . consult-preview-at-point-mode))

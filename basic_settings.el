@@ -9,14 +9,6 @@
 ;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
 ;; and `package-pinned-packages`. Most users will not need or want to do this.
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-;; Ensure use-package is installed
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-
-;; Make use-package always ensure packages are installed
-(require 'use-package)
-(setq use-package-always-ensure t)
 
 (doom-modeline-mode 1)
 (scroll-bar-mode -1)
@@ -80,7 +72,6 @@
 
 ;; Add pwsh-ls to path
 (use-package exec-path-from-shell
-  :ensure t
   :config
   (when (memq window-system '(mac ns x pgtk))
     (exec-path-from-shell-initialize)))

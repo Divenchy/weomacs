@@ -14,7 +14,6 @@
 ;;;; Elixir Tree-sitter Mode (Emacs 29+)
 (when (treesit-available-p)
   (use-package elixir-ts-mode
-    :ensure t
     :mode (("\\.ex\\'" . elixir-ts-mode)
            ("\\.exs\\'" . elixir-ts-mode)
            ("mix\\.lock" . elixir-ts-mode))
@@ -25,14 +24,12 @@
 ;;;; HEEx Templates (Phoenix)
 (when (treesit-available-p)
   (use-package heex-ts-mode
-    :ensure t
     :mode "\\.heex\\'"
     :hook (heex-ts-mode . lsp-deferred)))
 
 ;;;; Fallback: Traditional elixir-mode (if no tree-sitter)
 (unless (treesit-available-p)
   (use-package elixir-mode
-    :ensure t
     :mode (("\\.ex\\'" . elixir-mode)
            ("\\.exs\\'" . elixir-mode)
            ("mix\\.lock" . elixir-mode))
@@ -82,7 +79,6 @@
 
 ;; Alternative: Use reformatter package for smoother formatting
 (use-package reformatter
-  :ensure t
   :config
   (reformatter-define elixir-format
     :program "mix"
@@ -157,7 +153,6 @@
 
 ;;;; Optional: inf-elixir for better REPL integration
 (use-package inf-elixir
-  :ensure t
   :bind (:map elixir-ts-mode-map
               ("C-c C-z" . inf-elixir-project)
               ("C-c C-e" . inf-elixir-send-line)
@@ -166,7 +161,6 @@
 
 ;;;; Optional: exunit for test running
 (use-package exunit
-  :ensure t
   :hook ((elixir-ts-mode . exunit-mode)
          (elixir-mode . exunit-mode))
   :bind (:map elixir-ts-mode-map
@@ -177,7 +171,6 @@
 
 ;;;; Optional: mix.el for comprehensive mix support
 (use-package mix
-  :ensure t
   :hook ((elixir-ts-mode . mix-minor-mode)
          (elixir-mode . mix-minor-mode)))
 
