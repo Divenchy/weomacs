@@ -24,7 +24,7 @@
   (add-to-list 'major-mode-remap-alist '(yaml-mode . yaml-ts-mode)))
 
 ;; M-x package-vc-install RET https://github.com/mattt-b/odin-mode RET
-(use-package odin-mode
+(use-package odin-ts-mode
   :ensure t
   :mode "\\.odin\\'")
 

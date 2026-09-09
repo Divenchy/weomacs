@@ -1,8 +1,4 @@
-{
-  config,
-  pkgs,
-  ...
-}: let
+{pkgs, ...}: let
   tree-sitter-odin = pkgs.tree-sitter.buildGrammar {
     language = "odin";
     version = "unstable";
@@ -22,31 +18,30 @@ in {
     powershell-editor-services
     powershell
     (pkgs.writeShellScriptBin "pwsh-ls" ''
-     # Define a temporary or persistent path where the module can live isolated from the system
-     MODULE_DIR="$HOME/.local/share/powershell/modules"
-     mkdir -p "$MODULE_DIR"
+      # Define a temporary or persistent path where the module can live isolated from the system
+      MODULE_DIR="$HOME/.local/share/powershell/modules"
+      mkdir -p "$MODULE_DIR"
 
-     # Automatically fetch/install the required Editor Services module if it is missing
-     ${pkgs.powershell}/bin/pwsh -NoProfile -Command "
-       if (-not (Get-Module -ListAvailable -Name PowerShellEditorServices)) {
-           Write-Host 'Installing PowerShellEditorServices via Nix wrapper...'
-           Install-Module -Name PowerShellEditorServices -Force -Scope CurrentUser -Repository PSGallery
-       }
-     "
+      # Automatically fetch/install the required Editor Services module if it is missing
+      ${pkgs.powershell}/bin/pwsh -NoProfile -Command "
+        if (-not (Get-Module -ListAvailable -Name PowerShellEditorServices)) {
+            Write-Host 'Installing PowerShellEditorServices via Nix wrapper...'
+            Install-Module -Name PowerShellEditorServices -Force -Scope CurrentUser -Repository PSGallery
+        }
+      "
 
-     # Execute the language server using the system's native Nix-managed PowerShell binary
-     exec ${pkgs.powershell}/bin/pwsh -NoProfile -Command "
-       Import-Module PowerShellEditorServices;
-       Start-EditorServices \
-         -HostName 'Emacs' \
-         -HostProfileId 'Emacs.lsp-mode' \
-         -HostVersion '1.0.0' \
-         -LogPath '$HOME/.local/share/powershell/pwsh-ls.log' \
-         -LogLevel 'Normal' \
-         -Stdio
-     "
-   '')
-    
+      # Execute the language server using the system's native Nix-managed PowerShell binary
+      exec ${pkgs.powershell}/bin/pwsh -NoProfile -Command "
+        Import-Module PowerShellEditorServices;
+        Start-EditorServices \
+          -HostName 'Emacs' \
+          -HostProfileId 'Emacs.lsp-mode' \
+          -HostVersion '1.0.0' \
+          -LogPath '$HOME/.local/share/powershell/pwsh-ls.log' \
+          -LogLevel 'Normal' \
+          -Stdio
+      "
+    '')
   ];
 
   programs.emacs = {
@@ -141,7 +136,7 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-odin.so".source = "${tree-sitter-odin}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-yaml.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-yaml}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-powershell.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-powershell}/parser";
-    
+
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/init.el".source = ./init.el;
     ".emacs.d/eshell.el".source = ./eshell.el;
@@ -152,8 +147,8 @@ in {
     ".emacs.d/remaps.el".source = ./remaps.el;
     ".emacs.d/themes.el".source = ./themes.el;
     ".emacs.d/org.el".source = ./org.el;
-    
+
     ".emacs.d/lsp.el".source = ./lsp.el;
-    ".emacs.d/langs/elixir.el".source = ./langs/elixir.el;    
+    ".emacs.d/langs/elixir.el".source = ./langs/elixir.el;
   };
 }
