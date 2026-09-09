@@ -20,6 +20,7 @@
 
 ;; Lsp
 (load-file "~/.emacs.d/lsp.el")
+(load-file "~/.emacs.d/langs/elixir.el")
 
 ;; Org-Mode
 (load-file "~/.emacs.d/org.el")
