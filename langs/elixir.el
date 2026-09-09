@@ -1,7 +1,6 @@
 ;;; elixir.el --- Elixir development setup -*- lexical-binding: t -*-
 
 ;;;; Tree-sitter Grammar Installation (Emacs 29+)
-;; Run this once: M-x elixir-ts-install-grammar
 (defun elixir-ts-install-grammar ()
   "Install tree-sitter grammars for Elixir and HEEx."
   (interactive)
@@ -37,33 +36,45 @@
            (elixir-mode . (lambda ()
                             (add-hook 'before-save-hook 'elixir-format nil t))))))
 
-;;;; LSP Configuration for Elixir
+;;;; LSP Configuration for Elixir (Portable)
+(defun weo/find-elixir-ls ()
+  "Find the Elixir language server executable.
+Tries Lexical first, then elixir-ls, checking both PATH and common install locations."
+  (or
+   ;; Lexical - check PATH first (Nix, package managers)
+   (executable-find "lexical")
+   (executable-find "start_lexical.sh")
+   ;; Lexical - common manual install locations
+   (let ((lexical-path (expand-file-name "~/.local/share/lexical/_build/dev/package/lexical/bin/start_lexical.sh")))
+     (when (file-executable-p lexical-path) lexical-path))
+   (let ((lexical-path (expand-file-name "~/.lexical/_build/dev/package/lexical/bin/start_lexical.sh")))
+     (when (file-executable-p lexical-path) lexical-path))
+   
+   ;; Elixir-LS - check PATH first (Nix, package managers)
+   (executable-find "elixir-ls")
+   (executable-find "language_server.sh")
+   ;; Elixir-LS - common manual install locations
+   (let ((els-path (expand-file-name "~/.local/share/elixir-ls/release/language_server.sh")))
+     (when (file-executable-p els-path) els-path))
+   (let ((els-path (expand-file-name "~/.elixir-ls/release/language_server.sh")))
+     (when (file-executable-p els-path) els-path))))
+
 (with-eval-after-load 'lsp-mode
-  ;; Choose ONE of these language servers:
-
-  ;; Option A: Lexical (recommended for Elixir 1.20+)
-  ;; (lsp-register-client
-  ;;  (make-lsp-client
-  ;;   :new-connection (lsp-stdio-connection
-  ;;                    (expand-file-name "~/.local/share/lexical/_build/dev/package/lexical/bin/start_lexical.sh"))
-  ;;   :multi-root t
-  ;;   :activation-fn (lsp-activate-on "elixir")
-  ;;   :server-id 'lexical))
-
-  ;; Option B: Elixir-LS (comment out Lexical above if using this)
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection
-                     (expand-file-name "~/.local/share/elixir-ls/release/language_server.sh"))
-    :multi-root t
-    :activation-fn (lsp-activate-on "elixir")
-    :server-id 'elixir-ls))
-
-  ;; Register for tree-sitter modes
+  (let ((elixir-ls-cmd (weo/find-elixir-ls)))
+    (when elixir-ls-cmd
+      (message "Using Elixir LS: %s" elixir-ls-cmd)
+      (lsp-register-client
+       (make-lsp-client
+        :new-connection (lsp-stdio-connection (list elixir-ls-cmd))
+        :multi-root t
+        :activation-fn (lsp-activate-on "elixir")
+        :server-id 'elixir-ls
+        :priority 1))))  ; Higher priority to override built-in
+  
+  ;; Register tree-sitter modes with LSP
   (add-to-list 'lsp-language-id-configuration '(elixir-ts-mode . "elixir"))
   (add-to-list 'lsp-language-id-configuration '(heex-ts-mode . "elixir"))
-
-  ;; LSP settings for Elixir
+  
   (setq lsp-elixir-suggest-specs t))
 
 ;;;; Formatting with mix format
@@ -77,7 +88,6 @@
       (shell-command (format "mix format %s" (shell-quote-argument file)))
       (revert-buffer t t t))))
 
-;; Alternative: Use reformatter package for smoother formatting
 (use-package reformatter
   :config
   (reformatter-define elixir-format
@@ -151,7 +161,7 @@
 (add-hook 'elixir-ts-mode-hook 'elixir-setup-keybindings)
 (add-hook 'elixir-mode-hook 'elixir-setup-keybindings)
 
-;;;; Optional: inf-elixir for better REPL integration
+;;;; Optional packages
 (use-package inf-elixir
   :bind (:map elixir-ts-mode-map
               ("C-c C-z" . inf-elixir-project)
@@ -159,22 +169,14 @@
               ("C-c C-b" . inf-elixir-send-buffer)
               ("C-c C-r" . inf-elixir-send-region)))
 
-;;;; Optional: exunit for test running
 (use-package exunit
   :hook ((elixir-ts-mode . exunit-mode)
-         (elixir-mode . exunit-mode))
-  :bind (:map elixir-ts-mode-map
-              ("C-c , a" . exunit-verify-all)
-              ("C-c , v" . exunit-verify)
-              ("C-c , s" . exunit-verify-single)
-              ("C-c , r" . exunit-rerun)))
+         (elixir-mode . exunit-mode)))
 
-;;;; Optional: mix.el for comprehensive mix support
 (use-package mix
   :hook ((elixir-ts-mode . mix-minor-mode)
          (elixir-mode . mix-minor-mode)))
 
-;;;; DAP Debugging (optional)
 (with-eval-after-load 'dap-mode
   (require 'dap-elixir))
 

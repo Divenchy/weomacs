@@ -14,6 +14,14 @@ in {
     csharp-ls
     netcoredbg
 
+    zls
+    lexical
+    elixir-ls
+    rust-analyzer
+    nil
+    clang-tools
+    nodePackages.typescript-language-server
+    
     yaml-language-server
     powershell-editor-services
     powershell
@@ -61,6 +69,10 @@ in {
         powershell
         elixir-ts-mode
         heex-ts-mode
+        reformatter
+        inf-elixir
+        exunit
+        mix
 
         # Dev
         direnv
@@ -136,7 +148,8 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-odin.so".source = "${tree-sitter-odin}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-yaml.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-yaml}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-powershell.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-powershell}/parser";
-
+    ".emacs.d/tree-sitter/libtree-sitter-zig.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-zig}/parser";
+    
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/init.el".source = ./init.el;
     ".emacs.d/eshell.el".source = ./eshell.el;

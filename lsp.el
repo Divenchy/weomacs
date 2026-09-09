@@ -22,6 +22,8 @@
   (add-to-list 'major-mode-remap-alist '(csharp-mode . csharp-ts-mode)))
 (when (treesit-available-p)
   (add-to-list 'major-mode-remap-alist '(yaml-mode . yaml-ts-mode)))
+(when (treesit-available-p)
+  (add-to-list 'major-mode-remap-alist '(zig-mode . zig-ts-mode)))
 
 ;; M-x package-vc-install RET https://github.com/mattt-b/odin-mode RET
 (use-package odin-ts-mode
@@ -148,6 +150,15 @@
   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
 	'(orderless)))
 (add-hook 'lsp-completion-mode-hook #'weo/lsp-mode-setup-completion)
+(with-eval-after-load 'lsp-mode
+  ;; Register tree-sitter modes with LSP
+  (add-to-list 'lsp-language-id-configuration '(zig-ts-mode . "zig"))
+  (add-to-list 'lsp-language-id-configuration '(csharp-ts-mode . "csharp"))
+  (add-to-list 'lsp-language-id-configuration '(yaml-ts-mode . "yaml"))
+  (add-to-list 'lsp-language-id-configuration '(json-ts-mode . "json"))
+  (add-to-list 'lsp-language-id-configuration '(toml-ts-mode . "toml"))
+  (add-to-list 'lsp-language-id-configuration '(tsx-ts-mode . "typescriptreact")))
+
 
 ;; Debugging ;;
 (use-package dap-mode
