@@ -15,8 +15,8 @@ in {
     netcoredbg
 
     zls
-    lexical
-    elixir-ls
+    beamPackages.expert
+    beamPackages.elixir-ls
     rust-analyzer
     nil
     clang-tools
