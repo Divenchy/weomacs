@@ -14,7 +14,6 @@
 (load-file "~/.emacs.d/workflows.el")
 
 ;; Custom funcs
-(load-file "~/.emacs.d/weofuncs.el")
 (load-file "~/.emacs.d/visible-mark.el")
 
 ;; Theming
