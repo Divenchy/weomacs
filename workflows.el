@@ -1,3 +1,5 @@
+;;; workflows.el --- Workflow utilities -*- lexical-binding: t -*-
+
 (use-package direnv
   :config
   (direnv-mode))

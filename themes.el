@@ -1,3 +1,5 @@
+;;; themes.el --- Theme configuration -*- lexical-binding: t -*-
+
 (defun load-theme-doom-henna ()
   "Load the doom-henna theme."
   (interactive)

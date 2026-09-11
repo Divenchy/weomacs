@@ -1,3 +1,5 @@
+;;; basic_settings.el --- Basic Emacs settings -*- lexical-binding: t -*-
+
 ;; UI and STUFFZ ;;
 (setq inhibit-startup-message t) ;; Disable landing page
 

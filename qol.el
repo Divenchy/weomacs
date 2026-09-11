@@ -1,3 +1,5 @@
+;;; qol.el --- Quality of life improvements -*- lexical-binding: t -*-
+
 ;; Doom mode line
 (use-package doom-modeline
   :init (doom-modeline-mode 1)

@@ -1,3 +1,5 @@
+;;; lsp.el --- LSP and language configuration -*- lexical-binding: t -*-
+
 ;;;;;;;; LSP & Langs ;;;;;;;;
 (setq treesit-language-source-alist
       '((elixir "https://github.com/elixir-lang/tree-sitter-elixir")

@@ -1,3 +1,5 @@
+;;; init.el --- Emacs configuration -*- lexical-binding: t -*-
+
 ;; Emacs options
 (load-file "~/.emacs.d/basic_settings.el")
 

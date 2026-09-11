@@ -1,3 +1,5 @@
+;;; remaps.el --- Key remappings -*- lexical-binding: t -*-
+
 ;; VTerm ;;
 (global-set-key (kbd "C-c v") 'vterm)
 (global-set-key (kbd "C-c C-y") 'vterm-yank)

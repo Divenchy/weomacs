@@ -1,3 +1,5 @@
+;;; eshell.el --- Eshell configuration -*- lexical-binding: t -*-
+
 ;; Eshell
 (use-package eshell-git-prompt)
 

@@ -1,3 +1,5 @@
+;;; org.el --- Org-mode configuration -*- lexical-binding: t -*-
+
 (defun weo/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
