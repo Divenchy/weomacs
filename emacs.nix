@@ -154,7 +154,6 @@ in {
     ".emacs.d/init.el".source = ./init.el;
     ".emacs.d/eshell.el".source = ./eshell.el;
     ".emacs.d/qol.el".source = ./qol.el;
-    ".emacs.d/weofuncs.el".source = ./weofuncs.el;
     ".emacs.d/visible-mark.el".source = ./visible-mark.el;
     ".emacs.d/workflows.el".source = ./workflows.el;
     ".emacs.d/remaps.el".source = ./remaps.el;
