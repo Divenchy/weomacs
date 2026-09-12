@@ -90,7 +90,9 @@
   (setq read-process-output-max (* 1024 1024))
 
   :config
-  (dolist (config '((csharp-mode . "csharp")
+  (dolist (config '((c-ts-mode . "c")
+		    (c++-ts-mode . "cpp")
+		    (csharp-mode . "csharp")
                     (csharp-ts-mode . "csharp")
                     (elixir-mode . "elixir")
                     (elixir-ts-mode . "elixir")
@@ -106,7 +108,9 @@
     (add-to-list 'lsp-language-id-configuration config))
 
   :hook
-  ((csharp-ts-mode . lsp-deferred)
+  ((c-ts-mode . lsp-deferred)
+   (c++-ts-mode . lsp-deferred)
+   (csharp-ts-mode . lsp-deferred)
    (elixir-mode . lsp-deferred)
    (elixir-ts-mode . lsp-deferred)
    (heex-ts-mode . lsp-deferred)
@@ -196,3 +200,4 @@
 (load-file "~/.emacs.d/lsp/langs/csharp.el")
 (load-file "~/.emacs.d/lsp/langs/yaml.el")
 (load-file "~/.emacs.d/lsp/langs/powershell.el")
+(load-file "~/.emacs.d/lsp/langs/c.el")
