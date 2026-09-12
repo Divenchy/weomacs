@@ -11,6 +11,7 @@
   };
 in {
   home.packages = with pkgs; [
+    dotnet-sdk_10
     csharp-ls
     netcoredbg
 
@@ -63,7 +64,6 @@ in {
         nix-mode
         rust-mode
         zig-mode
-        csharp-mode
         yaml-mode
         dotnet
         powershell
@@ -98,9 +98,6 @@ in {
         consult
         embark
         embark-consult
-
-        doom-themes
-        doom-modeline
         rainbow-delimiters
         which-key
         helpful
@@ -108,17 +105,22 @@ in {
         flycheck
         hydra
         vterm
+        
         # Note Taking
         pdf-tools
         org
         org-bullets
         eshell-git-prompt
+        
         # Presentation
         visual-fill-column
         command-log-mode
         evil-nerd-commenter
         visual-fill-column
+        
         # Theming
+        doom-themes
+        doom-modeline
         ewal
         ef-themes
         sculpture-themes
@@ -149,6 +151,7 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-yaml.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-yaml}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-powershell.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-powershell}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-zig.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-zig}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-c-sharp.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-c-sharp}/parser";    
     
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/init.el".source = ./init.el;
@@ -159,8 +162,6 @@ in {
     ".emacs.d/remaps.el".source = ./remaps.el;
     ".emacs.d/themes.el".source = ./themes.el;
     ".emacs.d/org.el".source = ./org.el;
-
     ".emacs.d/lsp.el".source = ./lsp.el;
-    ".emacs.d/langs/elixir.el".source = ./langs/elixir.el;
   };
 }
