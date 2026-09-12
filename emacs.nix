@@ -168,5 +168,6 @@ in {
     ".emacs.d/lsp/langs/yaml.el".source = ./lsp/langs/yaml.el;
     ".emacs.d/lsp/langs/csharp.el".source = ./lsp/langs/csharp.el;
     ".emacs.d/lsp/langs/elixir.el".source = ./lsp/langs/elixir.el;
+    ".emacs.d/lsp/langs/powershell.el".source = ./lsp/langs/powershell.el;    
   };
 }
