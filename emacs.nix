@@ -162,6 +162,6 @@ in {
     ".emacs.d/remaps.el".source = ./remaps.el;
     ".emacs.d/themes.el".source = ./themes.el;
     ".emacs.d/org.el".source = ./org.el;
-    ".emacs.d/lsp.el".source = ./lsp.el;
+    ".emacs.d/lsp/lsp.el".source = ./lsp/lsp.el;
   };
 }
