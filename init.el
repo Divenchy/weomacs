@@ -20,7 +20,7 @@
 (load-file "~/.emacs.d/themes.el")
 
 ;; Lsp
-(load-file "~/.emacs.d/lsp.el")
+(load-file "~/.emacs.d/lsp/lsp.el")
 
 ;; Org-Mode
 (load-file "~/.emacs.d/org.el")
