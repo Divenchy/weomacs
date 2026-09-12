@@ -16,7 +16,7 @@
   ;; Schema associations
   (setq lsp-yaml-schemas
         '(;; Azure Pipelines
-          (https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/main/service-schema.json .
+          ("https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/main/service-schema.json" .
            ["azure-pipelines.yml"
             "azure-pipelines.yaml"
             "**/azure-pipelines/**/*.yml"
@@ -34,12 +34,12 @@
             ".github/workflows/*.yaml"])
           
           ;; GitHub Actions (composite actions)
-          (https://json.schemastore.org/github-action.json .
+          ("https://json.schemastore.org/github-action.json" .
            ["action.yml"
             "action.yaml"])
           
           ;; Docker Compose
-          (https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json .
+          ("https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json" .
            ["docker-compose.yml"
             "docker-compose.yaml"
             "docker-compose.*.yml"
@@ -48,7 +48,7 @@
             "compose.yaml"])
           
           ;; Kubernetes
-          (kubernetes .
+          ("kubernetes" .
            ["**/kubernetes/**/*.yml"
             "**/kubernetes/**/*.yaml"
             "**/k8s/**/*.yml"
@@ -61,49 +61,9 @@
             "service.yaml"])
           
           ;; Helm
-          (https://json.schemastore.org/chart.json .
+          ("https://json.schemastore.org/chart.json" .
            ["Chart.yml"
-            "Chart.yaml"])
-          
-          ;; Ansible
-          (https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook .
-           ["**/playbooks/**/*.yml"
-            "**/playbooks/**/*.yaml"
-            "playbook.yml"
-            "playbook.yaml"
-            "site.yml"
-            "site.yaml"])
-          
-          ;; GitLab CI
-          (https://json.schemastore.org/gitlab-ci.json .
-           [".gitlab-ci.yml"
-            ".gitlab-ci.yaml"])
-          
-          ;; CircleCI
-          (https://json.schemastore.org/circleciconfig.json .
-           [".circleci/config.yml"
-            ".circleci/config.yaml"])
-          
-          ;; Travis CI
-          (https://json.schemastore.org/travis.json .
-           [".travis.yml"
-            ".travis.yaml"])
-          
-          ;; Pre-commit
-          (https://json.schemastore.org/pre-commit-config.json .
-           [".pre-commit-config.yml"
-            ".pre-commit-config.yaml"])
-          
-          ;; Renovate
-          (https://docs.renovatebot.com/renovate-schema.json .
-           ["renovate.json"
-            ".renovaterc"
-            ".renovaterc.json"])
-          
-          ;; dependabot
-          (https://json.schemastore.org/dependabot-2.0.json .
-           [".github/dependabot.yml"
-            ".github/dependabot.yaml"]))))
+            "Chart.yaml"]))))
 
 ;;;; Custom Indentation
 (defun weo/yaml-cycle-indent ()
