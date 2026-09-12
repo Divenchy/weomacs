@@ -1,0 +1,20 @@
+# Emacs `.gitignore`
+
+# Backup files
+*~
+\#*\#
+.\#*
+
+# Auto-save files
+.saves-*
+
+# Lock files
+.#*
+
+# Session files
+auto-save-list/
+session.*
+
+# Transient files
+tramp
+transient/
