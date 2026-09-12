@@ -198,9 +198,6 @@ const allocator = gpa.allocator();
   (local-set-key (kbd "C-c C-c") #'weo/zig-check)
   (local-set-key (kbd "C-c C-k") #'weo/zig-clean)
   
-  ;; Formatting
-  (local-set-key (kbd "C-c f") #'weo/zig-format-buffer)
-  
   ;; Documentation
   (local-set-key (kbd "C-c d s") #'weo/zig-doc-std)
   (local-set-key (kbd "C-c d l") #'weo/zig-doc-lang)
