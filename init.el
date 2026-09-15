@@ -26,7 +26,7 @@
 (load-file "~/.emacs.d/org.el")
 
 ;; Treesit-sexp by Alexis Purslane
-(add-to-list load-file "~/.emacs.d/treesit-sexp/treesit-sexp.el")
+(add-to-list load-file "~/.emacs.d/treesit-sexp")
 
 (defun weo/display-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections."
