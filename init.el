@@ -25,6 +25,9 @@
 ;; Org-Mode
 (load-file "~/.emacs.d/org.el")
 
+;; Treesit-sexp by Alexis Purslane
+(load-file "~/.emacs.d/treesit-sexp/treesit-sexp.el")
+
 (defun weo/display-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections."
 	   (format "%.2f seconds"

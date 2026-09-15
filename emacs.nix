@@ -11,7 +11,7 @@
   };
 in {
   home.packages = with pkgs; [
-    dotnet-sdk_10
+    dotnet-sdk_11
     csharp-ls
     netcoredbg
 
@@ -163,6 +163,8 @@ in {
     ".emacs.d/remaps.el".source = ./remaps.el;
     ".emacs.d/themes.el".source = ./themes.el;
     ".emacs.d/org.el".source = ./org.el;
+    ".emacs.d/treesit-sexp/treesit-sexp.el".source = ./treesit-sexp/treesit-sexp.el;
+    ".emacs.d/treesit-sexp/structural-editing.el".source = ./treesit-sexp/structural-editing.el;
     ".emacs.d/lsp/lsp.el".source = ./lsp/lsp.el;
     ".emacs.d/lsp/debugging.el".source = ./lsp/debugging.el;
     ".emacs.d/lsp/langs/zig.el".source = ./lsp/langs/zig.el;
