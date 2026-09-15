@@ -105,6 +105,7 @@ in {
         flycheck
         hydra
         vterm
+        expand-region
         
         # Note Taking
         pdf-tools
