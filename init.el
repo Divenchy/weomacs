@@ -4,7 +4,7 @@
 (load-file "~/.emacs.d/basic_settings.el")
 
 ;; Treesit-sexp by Alexis Purslane
-(load-file "~/.emacs.d/treesit-sexp")
+(load-file "~/.emacs.d/treesit-sexp.el")
 
 ;; Emacs remaps
 (load-file "~/.emacs.d/remaps.el")
