@@ -3,6 +3,9 @@
 ;; Emacs options
 (load-file "~/.emacs.d/basic_settings.el")
 
+;; Treesit-sexp by Alexis Purslane
+(add-to-list load-file "~/.emacs.d/treesit-sexp")
+
 ;; Emacs remaps
 (load-file "~/.emacs.d/remaps.el")
 
@@ -24,9 +27,6 @@
 
 ;; Org-Mode
 (load-file "~/.emacs.d/org.el")
-
-;; Treesit-sexp by Alexis Purslane
-(add-to-list load-file "~/.emacs.d/treesit-sexp")
 
 (defun weo/display-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections."
