@@ -8,7 +8,6 @@
 (global-set-key (kbd "C-,") 'avy-goto-char)
 (global-set-key (kbd "M-,") 'avy-goto-char-2)
 (global-set-key (kbd "M-g l") 'avy-goto-line)
-(global-set-key (kbd "C-.") 'avy-goto-word-1)
 
 ;; Getting harpoony ;;
 (dotimes (i 9)
@@ -79,22 +78,22 @@
 ;;;;;;;; Editing Remaps ;;;;;;;;;;;
 
 ;; Multiple Cursors ;;
-
 (global-set-key (kbd "C-\\") 'nil)
 (global-set-key (kbd "C-:") 'nil)
 
 (use-package multiple-cursors)
 (global-set-key (kbd "M-M") 'mc/edit-lines)
-(global-set-key (kbd "C->")         'mc/mark-next-like-this)
-(global-set-key (kbd "C-<")         'mc/mark-previous-like-this)
-(global-set-key (kbd "C-M-;")        'mc/skip-to-next-like-this)
-(global-set-key (kbd "M-;")         'mc/skip-to-previous-like-this)
+(global-set-key (kbd "M-h") 'set-rectangular-region-anchor)
+(global-set-key (kbd "C->") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-;") 'mc/skip-to-next-like-this)
+(global-set-key (kbd "C-M-;") 'mc/skip-to-previous-like-this)
 
 ;; Better newline, create it without breaking cur line
 (global-set-key (kbd "M-<return>") (lambda ()
-				(interactive)
-				(move-end-of-line 1)
-				(newline-and-indent)))
+				     (interactive)
+				     (move-end-of-line 1)
+				     (newline-and-indent)))
 (global-set-key (kbd "C-<return>")
   (lambda ()
     (interactive)
@@ -111,7 +110,6 @@
   (delete-char 1)
   (insert char)
   (backward-char 1))  ;; stay on replaced char, like Vim
-(global-set-key (kbd "C-r") #'weo/replace-char)
 
 ;; Copy ;;
 (global-set-key (kbd "M-c") 'copy-from-above-command)
@@ -167,7 +165,7 @@
 (define-key mark-prefix (kbd "b") 'mark-whole-buffer)
 (define-key mark-prefix (kbd "P") 'mark-page)
 
-(global-set-key (kbd "M-W") 'kill-region) ;; W for withdraw
+(global-set-key (kbd "M-W") 'kill-region)
 (global-set-key (kbd "M-w") 'kill-ring-save)
 
 ;;;;;;;; Lines ;;;;;;;;

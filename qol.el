@@ -77,15 +77,14 @@
 ;;; Consult - Enhanced search commands
 (use-package consult
   :bind (("C-s" . consult-line)           ; Better isearch
-         ("C-x b" . consult-buffer)        ; Better switch-buffer
          ("M-g g" . consult-goto-line)
          ("C-S-c" . consult-history)
 	 ("M-y" . consult-yank-pop)))      ; Better kill ring
 
 ;;; Embark - Contextual actions
 (use-package embark
-  :bind (("C-." . embark-act)
-         ("C-;" . embark-dwim)
+  :bind (("C-\\" . embark-act)
+         ("C-:" . embark-dwim)
 	 ("C-h B" . embark-bindings))
   :config
   (setq prefix-help-command #'embark-prefix-help-command))
