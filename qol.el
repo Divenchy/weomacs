@@ -1,5 +1,14 @@
 ;;; qol.el --- Quality of life improvements -*- lexical-binding: t -*-
 
+;; Visible mark
+(defface visible-mark-active ;; put this before (require 'visible-mark)
+  '((((type tty) (class mono)))
+    (t (:background "magenta"))) "")
+(setq visible-mark-max 2)
+(setq visible-mark-faces `(visible-mark-face1 visible-mark-face2))
+
+(require 'visible-mark)
+
 ;; Doom mode line
 (use-package doom-modeline
   :init (doom-modeline-mode 1)

@@ -119,7 +119,12 @@
 ;; Yanking ;;
 (global-set-key (kbd "C-M-y") 'counsel-yank-pop)
 
-;;;;;;;;;; Mark ;;;;;;;;;;
+;;;;;;;;;; Mark/Registers ;;;;;;;;;;
+(defun weo/clear-mark-ring-command ()
+  "Run your command or clear the mark-ring."
+  (interactive)
+  (setq mark-ring nil))
+
 (defun push-mark-no-activate ()
   "Pushes `point' to `mark-ring' and does not activate the region
    Equivalent to \\[set-mark-command] when \\[transient-mark-mode] is disabled"
@@ -137,9 +142,20 @@
 
 (global-set-key (kbd "M-SPC") 'jump-to-mark)
 
+(defun exchange-point-and-mark-no-activate ()
+  "Identical to \\[exchange-point-and-mark] but will not activate the region."
+  (interactive)
+  (exchange-point-and-mark)
+  (deactivate-mark nil))
+(define-key global-map (kbd "C-x C-x") 'exchange-point-and-mark-no-activate)
+
+(global-set-key (kbd "C-r") 'point-to-register)
+(global-set-key (kbd "C-j") 'jump-to-register)
+
 ;; Mark prefix
 (define-prefix-command 'mark-prefix)
 (global-set-key (kbd "M-m") 'mark-prefix)
+(define-key mark-prefix (kbd "c") #'weo/clear-mark-ring-command)
 (define-key mark-prefix (kbd "m") 'set-mark-command)
 (define-key mark-prefix (kbd "r") 'rectangle-mark-mode)
 (define-key mark-prefix (kbd "p") 'mark-paragraph)
@@ -153,10 +169,9 @@
 (global-set-key (kbd "M-W") 'kill-region) ;; W for withdraw
 (global-set-key (kbd "M-w") 'kill-ring-save)
 
-
 ;;;;;;;; Lines ;;;;;;;;
 
-(global-set-key (kbd "M-i") 'beginning-of-line-text)
+(global-set-key (kbd "M-i") 'back-to-indentation)
 
 (defun weo/yank-line ()
   "Copy the current line to the kill ring."
@@ -166,7 +181,7 @@
     (kill-ring-save beg end)
      (message "Line copied")))
 
-(global-set-key (kbd "M-y") #'weo/yank-line)
+(global-set-key (kbd "C-M-y") #'weo/yank-line)
 
 ;; Standardize C-y
 (defun weo/yank-replace-region ()
@@ -183,6 +198,7 @@
 (global-set-key (kbd "C-c f") 'file-prefix)
 (define-prefix-command 'buffer-prefix)
 (global-set-key (kbd "C-c b") 'buffer-prefix)
+(global-set-key (kbd "M-q") #'consult-buffer)
 
 (global-set-key (kbd "M-s") #'save-buffer) 
 

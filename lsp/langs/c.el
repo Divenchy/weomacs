@@ -199,11 +199,7 @@ int main(int argc, char *argv[]) {
   (local-set-key (kbd "C-c m c") #'weo/cmake-configure)
   (local-set-key (kbd "C-c m b") #'weo/cmake-build)
   (local-set-key (kbd "C-c m r") #'weo/cmake-build-release)
-  
-  ;; Format
-  (local-set-key (kbd "C-c f") #'weo/c-format-buffer)
-  (local-set-key (kbd "C-c F") #'weo/c-format-region)
-  
+        
   ;; Navigation
   (local-set-key (kbd "C-c o") #'weo/c-toggle-header-source)
   
