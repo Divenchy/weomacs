@@ -8,6 +8,7 @@
 (setq visible-mark-faces `(visible-mark-face1 visible-mark-face2))
 
 (require 'visible-mark)
+(global-visible-mark-mode 1)
 
 ;; Doom mode line
 (use-package doom-modeline

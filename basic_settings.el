@@ -20,7 +20,6 @@
 (menu-bar-mode -1)
 (show-paren-mode 1)
 (global-subword-mode 1)
-(global-visible-mark-mode 1)
 (repeat-mode 1)
 (setq bookmark-save-flag 1)
 (setq default-directory (concat (getenv "HOME") "/"))

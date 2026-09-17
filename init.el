@@ -9,10 +9,6 @@
 ;; Eshell setup
 (load-file "~/.emacs.d/eshell.el")
 
-;; QoL + UI
-(load-file "~/.emacs.d/qol.el")
-(load-file "~/.emacs.d/workflows.el")
-
 ;; Custom funcs
 (load-file "~/.emacs.d/visible-mark.el")
 
@@ -24,6 +20,10 @@
 
 ;; Org-Mode
 (load-file "~/.emacs.d/org.el")
+
+;; QoL + UI
+(load-file "~/.emacs.d/qol.el")
+(load-file "~/.emacs.d/workflows.el")
 
 (defun weo/display-startup-time ()
   (message "Emacs loaded in %s with %d garbage collections."
