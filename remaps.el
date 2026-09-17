@@ -141,6 +141,7 @@
   (set-mark-command 1))
 
 (global-set-key (kbd "M-SPC") 'jump-to-mark)
+(global-set-key (kbd "C-M-SPC") 'pop-global-mark)
 
 (defun exchange-point-and-mark-no-activate ()
   "Identical to \\[exchange-point-and-mark] but will not activate the region."
@@ -198,7 +199,7 @@
 (global-set-key (kbd "C-c f") 'file-prefix)
 (define-prefix-command 'buffer-prefix)
 (global-set-key (kbd "C-c b") 'buffer-prefix)
-(global-set-key (kbd "M-q") #'consult-buffer)
+(bind-key* "M-q" #'consult-buffer)
 
 (global-set-key (kbd "M-s") #'save-buffer) 
 
