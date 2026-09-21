@@ -87,6 +87,7 @@ in {
         apheleia
 
         # Extendability
+        gcmh
         nerd-icons-dired
         undo-fu
         undo-fu-session
