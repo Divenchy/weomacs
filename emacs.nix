@@ -84,12 +84,19 @@ in {
         lsp-treemacs
         dap-mode
         yasnippet
+        apheleia
 
         # Extendability
+        nerd-icons-dired
+        undo-fu
+        undo-fu-session
+        stripspace
         ripgrep
         ligature
         multiple-cursors
+        prescient
         corfu
+        nerd-icons-corfu
         cape
         compat
         kind-icon
