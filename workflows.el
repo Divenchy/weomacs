@@ -26,17 +26,8 @@
   (when (file-directory-p "~/")
     (setq projectile-project-search-path '("~/Documents/" "~/Projects/")))
   (setq projectile-switch-project-action #'projectile-dired))
-(with-eval-after-load 'projectile
-  (setq projectile-ripgrep-arguments
-        '("--fixed-strings" 
-          "--hidden" 
-          "--no-heading" 
-          "--line-number" 
-          "--with-filename" 
-          "--color=always" 
-          "--ignore-case")))
 
-(global-set-key (kbd "C-S-s") 'projectile-ripgrep)
+(global-set-key (kbd "C-S-s") 'consult-ripgrep)
 
 ;; Save curent window layout
 (defun my/toggle-window-layout ()
