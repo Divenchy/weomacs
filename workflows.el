@@ -8,7 +8,7 @@
 (use-package magit
   :commands (magit-status magit-get-current-branch)
   :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)) ;; Makes Magit appear in the same window instead of a new window
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)) ;; Makes Magit appear in the same window 
 
 ;; Projectile ;;
 
@@ -26,6 +26,7 @@
   (when (file-directory-p "~/")
     (setq projectile-project-search-path '("~/Documents/" "~/Projects/")))
   (setq projectile-switch-project-action #'projectile-dired))
+(global-set-key (kbd "C-S-s") 'projectile-ripgrep)
 
 ;; Save curent window layout
 (defun my/toggle-window-layout ()

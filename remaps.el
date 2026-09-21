@@ -77,6 +77,9 @@
 
 ;;;;;;;; Editing Remaps ;;;;;;;;;;;
 
+;; Redo
+(global-set-key (kbd "C-_") 'undo-redo)
+
 ;; Multiple Cursors ;;
 (global-set-key (kbd "C-\\") 'nil)
 (global-set-key (kbd "C-:") 'nil)
@@ -316,3 +319,6 @@
 (define-key quit-prefix (kbd "r") #'weo/reload-init)
 (define-key quit-prefix (kbd "q") #'save-buffers-kill-emacs)
 (define-key quit-prefix (kbd "R") #'restart-emacs)
+
+;; expand-region
+(global-set-key (kbd "C-\\") #'er/expand-region)

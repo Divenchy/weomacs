@@ -86,6 +86,7 @@ in {
         yasnippet
 
         # Extendability
+        ripgrep
         ligature
         multiple-cursors
         corfu
