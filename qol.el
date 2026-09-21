@@ -63,6 +63,10 @@
   :hook
   ;; Clean up file path when typing
   (rfn-eshadow-update-overlay . vertico-directory-tidy))
+(use-package vertico-prescient
+  :after vertico
+  :config
+  (vertico-prescient-mode 1))
 
 (use-package orderless
   :custom
@@ -92,3 +96,46 @@
 (use-package embark-consult
   :after (embark consult)
   :hook (embark-collect-mode . consult-preview-at-point-mode))
+
+(use-package prescient
+  :config
+  ;; Save sorting data between sessions
+  (prescient-persist-mode 1)
+  
+  (setq prescient-filter-method
+        '(literal
+          initialism
+          prefix
+          regexp))
+  
+  (setq prescient-history-length 1000)
+  
+  (setq prescient-save-file
+        (expand-file-name "prescient-save.el" user-emacs-directory)))
+
+(use-package undo-fu
+  :config
+  (global-unset-key (kbd "C-z"))
+  :bind
+  (("C-z" . undo-fu-only-undo)
+   ("C-S-z" . undo-fu-only-redo)))
+
+(use-package undo-fu-session
+  :after undo-fu
+  :config
+  (undo-fu-session-global-mode))
+
+(use-package gcmh
+  :diminish gcmh-mode
+  :custom
+  ;; Seconds of idle time before GC
+  (gcmh-idle-delay '10)
+  
+  ;; High threshold during normal operation (default 1GB might be too high)
+  (gcmh-high-cons-threshold (* 256 1024 1024))  ;; 256 MB
+    
+  ;; Be verbose (useful for debugging)
+  (gcmh-verbose nil)
+  
+  :config
+  (gcmh-mode 1))

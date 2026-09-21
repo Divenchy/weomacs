@@ -95,6 +95,8 @@ in {
         ligature
         multiple-cursors
         prescient
+        corfu-prescient
+        vertico-prescient
         corfu
         nerd-icons-corfu
         cape

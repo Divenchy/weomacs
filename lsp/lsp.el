@@ -19,6 +19,10 @@
   :init
   (global-corfu-mode)
   (corfu-popupinfo-mode))
+(use-package corfu-prescient
+  :after corfu
+  :config
+  (corfu-prescient-mode 1))
 
 ;;;; Cape
 (use-package cape
