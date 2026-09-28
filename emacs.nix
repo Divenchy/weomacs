@@ -147,7 +147,7 @@ in {
             owner = "Sampie159";
             repo = "odin-ts-mode";
             rev = "master";
-            sha256 = "JaNwVpNhAUmq3mv/44ryvR7hrZywwEqXpRjFqVpfIKo=";
+            sha256 = "/Zh1Xn5VknOqeKs7HTkMXS8sCq9NjZ56CtfKVWC8nyc=";
           };
         })
       ];
