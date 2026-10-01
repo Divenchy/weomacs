@@ -96,6 +96,9 @@
   :config
   (dolist (config '((c-ts-mode . "c")
 		    (c++-ts-mode . "cpp")
+                    (zig-mode . "zig")
+                    (zig-ts-mode . "zig")
+		    (odin-ts-mode . "odin")		    
 		    (csharp-mode . "csharp")
                     (csharp-ts-mode . "csharp")
                     (elixir-mode . "elixir")
@@ -105,24 +108,22 @@
                     (yaml-ts-mode . "yaml")
                     (json-ts-mode . "json")
                     (toml-ts-mode . "toml")
-                    (zig-mode . "zig")
-                    (zig-ts-mode . "zig")
-                    (tsx-ts-mode . "typescriptreact")
-                    (odin-ts-mode . "odin")))
+                    (tsx-ts-mode . "typescriptreact")))
     (add-to-list 'lsp-language-id-configuration config))
 
   :hook
   ((c-ts-mode . lsp-deferred)
    (c++-ts-mode . lsp-deferred)
+   (c-mode . lsp-deferred)   
+   (odin-ts-mode . lsp-deferred)   
+   (zig-mode . lsp-deferred)
+   (rust-mode . lsp-deferred)
    (csharp-ts-mode . lsp-deferred)
    (elixir-mode . lsp-deferred)
    (elixir-ts-mode . lsp-deferred)
    (heex-ts-mode . lsp-deferred)
    (yaml-mode . lsp-deferred)
    (yaml-ts-mode . lsp-deferred)
-   (zig-mode . lsp-deferred)
-   (rust-mode . lsp-deferred)
-   (c-mode . lsp-deferred)
    (js-mode . lsp-deferred)
    (json-ts-mode . lsp-deferred)
    (typescript-mode . lsp-deferred)
@@ -130,7 +131,6 @@
    (toml-ts-mode . lsp-deferred)
    (powershell-mode . lsp-deferred)
    (glsl-mode . lsp-deferred)
-   (odin-ts-mode . lsp-deferred)
    (lsp-mode . lsp-enable-which-key-integration))
 
   :commands (lsp lsp-deferred))
@@ -170,7 +170,7 @@
       :server-id 'elixir-ls
       :priority 1))))
 
-;; C# LS
+;; CSharp LS
 (with-eval-after-load 'lsp-mode
   (when (executable-find "csharp-ls")
     (lsp-register-client
