@@ -61,6 +61,8 @@ in {
     extraPackages = epkgs:
       (with epkgs; [
         # Langs
+        gprbuild
+        alire
         ada-mode
         glsl-mode
         nix-mode
