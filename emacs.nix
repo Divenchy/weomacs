@@ -15,6 +15,7 @@ in {
     csharp-ls
     netcoredbg
 
+    ada-language-server
     zls
     beamPackages.expert
     beamPackages.elixir-ls
@@ -60,6 +61,7 @@ in {
     extraPackages = epkgs:
       (with epkgs; [
         # Langs
+        ada-mode
         glsl-mode
         nix-mode
         rust-mode

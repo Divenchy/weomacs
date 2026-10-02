@@ -116,6 +116,7 @@
   ((c-ts-mode . lsp-deferred)
    (c++-ts-mode . lsp-deferred)
    (c-mode . lsp-deferred)   
+   (ada-mode . lsp-deferred)
    (odin-ts-mode . lsp-deferred)   
    (zig-mode . lsp-deferred)
    (rust-mode . lsp-deferred)
