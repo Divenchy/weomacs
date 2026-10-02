@@ -15,6 +15,8 @@ in {
     csharp-ls
     netcoredbg
 
+    gprbuild
+    alire    
     zls
     beamPackages.expert
     beamPackages.elixir-ls
@@ -60,8 +62,6 @@ in {
     extraPackages = epkgs:
       (with epkgs; [
         # Langs
-        gprbuild
-        alire
         ada-mode
         glsl-mode
         nix-mode
