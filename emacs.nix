@@ -15,7 +15,6 @@ in {
     csharp-ls
     netcoredbg
 
-    ada-language-server
     zls
     beamPackages.expert
     beamPackages.elixir-ls
