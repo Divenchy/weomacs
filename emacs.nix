@@ -62,6 +62,7 @@ in {
     extraPackages = epkgs:
       (with epkgs; [
         # Langs
+        ada-ts-mode
         glsl-mode
         nix-mode
         rust-mode
