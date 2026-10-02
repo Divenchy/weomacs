@@ -68,6 +68,7 @@
         (css "https://github.com/tree-sitter/tree-sitter-css")
         (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
         (odin "https://github.com/ap29600/tree-sitter-odin")
+	(ada "https://github.com/briot/tree-sitter-ada")
         (c-sharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
         (zig "https://github.com/tree-sitter-grammars/tree-sitter-zig")))
 
@@ -96,6 +97,8 @@
   :config
   (dolist (config '((c-ts-mode . "c")
 		    (c++-ts-mode . "cpp")
+		    (ada-ts-mode . "ads")
+		    (ada-ts-mode . "adb")
                     (zig-mode . "zig")
                     (zig-ts-mode . "zig")
 		    (odin-ts-mode . "odin")		    
@@ -116,7 +119,7 @@
   ((c-ts-mode . lsp-deferred)
    (c++-ts-mode . lsp-deferred)
    (c-mode . lsp-deferred)   
-   (ada-mode . lsp-deferred)
+   (ada-ts-mode . lsp-deferred)
    (odin-ts-mode . lsp-deferred)   
    (zig-mode . lsp-deferred)
    (rust-mode . lsp-deferred)

@@ -62,7 +62,6 @@ in {
     extraPackages = epkgs:
       (with epkgs; [
         # Langs
-        ada-mode
         glsl-mode
         nix-mode
         rust-mode
@@ -168,6 +167,7 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-zig.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-zig}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-c.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-c}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-cpp.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-cpp}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-ada.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-ada}/parser";
     
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/init.el".source = ./init.el;
