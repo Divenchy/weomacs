@@ -83,15 +83,21 @@
   :bind (("C-s" . consult-line)           ; Better isearch
          ("M-g g" . consult-goto-line)
          ("C-S-c" . consult-history)
+	 ("M-r" . consult-ripgrep)
 	 ("M-y" . consult-yank-pop)))      ; Better kill ring
 
 ;;; Embark - Contextual actions
 (use-package embark
   :bind (("C-|" . embark-act)
          ("C-:" . embark-dwim)
-	 ("C-h B" . embark-bindings))
+	 ("C-h B" . embark-bindings)
+	 :map minibuffer-local-map
+	 ("C-o" . embark-export))
   :config
   (setq prefix-help-command #'embark-prefix-help-command))
+
+(use-package wgrep
+  :custom (wgrep-auto-save-buffer t))
 
 (use-package embark-consult
   :after (embark consult)

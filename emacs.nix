@@ -90,6 +90,7 @@ in {
         apheleia
 
         # Extendability
+        wgrep
         gcmh
         nerd-icons-dired
         undo-fu
