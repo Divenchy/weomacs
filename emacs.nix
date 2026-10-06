@@ -6,7 +6,7 @@
       mkdir $out
       cp ${pkgs.fetchurl {
         url = "https://raw.githubusercontent.com/githwxi/ATS-Postiats/master/utils/emacs/ats2-mode.el";
-        hash = "MB2swFvj/KfqMAMV0X4lxPQ+rOeF+dk9/4c1YhEmZIM=";
+        hash = "sha256-MB2swFvj/KfqMAMV0X4lxPQ+rOeF+dk9/4c1YhEmZIM=";
       }} $out/ats2-mode.el
     '';
   };
