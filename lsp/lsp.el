@@ -80,8 +80,8 @@
 (use-package odin-ts-mode
   :mode "\\.odin\\'")
 
-(require 'ats-mode)
-(add-to-list 'auto-mode-alist '("\\.\\(sats\\|dats\\|hats\\|cats\\)\\'" . ats-mode))
+(require 'ats2-mode)
+(add-to-list 'auto-mode-alist '("\\.\\(sats\\|dats\\|hats\\|cats\\)\\'" . ats2-mode))
 
 ;;;; LSP Mode Configuration
 (use-package lsp-mode
