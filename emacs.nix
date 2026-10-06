@@ -67,6 +67,7 @@ in {
         nix-mode
         rust-mode
         zig-mode
+        zig-ts-mode
         yaml-mode
         dotnet
         powershell

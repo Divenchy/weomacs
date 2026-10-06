@@ -1,6 +1,6 @@
 ;;; zig.el --- Zig language utilities -*- lexical-binding: t -*-
 
-(use-package zig-mode
+(use-package zig-ts-mode
   :mode "\\.zig\\'"
   :custom
   (zig-format-on-save nil))  ; We'll handle formatting ourselves
@@ -188,7 +188,7 @@ const allocator = gpa.allocator();
 (defun weo/zig-setup ()
   "Zig mode setup."
   (setq-local indent-tabs-mode nil)
-  (setq-local tab-width 4)
+  (setq-local tab-width 2)
   
   ;; Build commands
   (local-set-key (kbd "C-c C-b") #'weo/zig-build)
@@ -212,7 +212,7 @@ const allocator = gpa.allocator();
   ;; LSP
   (local-set-key (kbd "C-c l r") #'weo/zig-restart-lsp))
 
-(add-hook 'zig-mode-hook #'weo/zig-setup)
+(add-hook 'zig-ts-mode-hook #'weo/zig-setup)
 
 (add-hook 'before-save-hook #'weo/zig-format-on-save)
 

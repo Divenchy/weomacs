@@ -119,6 +119,7 @@
    (c++-ts-mode . lsp-deferred)
    (c-mode . lsp-deferred)   
    (ada-ts-mode . lsp-deferred)
+   (zig-ts-mode . lsp-deferred)
    (rust-mode . lsp-deferred)
    (csharp-ts-mode . lsp-deferred)
    (nix-mode . lsp-deferred)
