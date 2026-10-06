@@ -77,6 +77,8 @@
                    (yaml-mode . yaml-ts-mode)))
     (add-to-list 'major-mode-remap-alist remap)))
 
+(use-package odin-ts-mode
+  :mode "\\.odin\\'")
 ;;;; LSP Mode Configuration
 (use-package lsp-mode
   :init
