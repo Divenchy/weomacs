@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  ats2-mode = epkgs: epkgs.trivialBuild {
+  ats2-mode = pkgs.emacsPackages.trivialBuild {
     pname = "ats2-mode";
     version = "unstable";
     src = pkgs.runCommand "ats2-mode-src" { } ''
@@ -9,7 +9,7 @@
         hash = "";  # build once, copy the real hash from the error
       }} $out/ats2-mode.el
     '';
-  };  
+  };
   tree-sitter-odin = pkgs.tree-sitter.buildGrammar {
     language = "odin";
     version = "unstable";
@@ -73,7 +73,6 @@ in {
     extraPackages = epkgs:
       (with epkgs; [
         # Langs
-        ats2-mode
         ada-ts-mode
         glsl-mode
         nix-mode
@@ -157,6 +156,7 @@ in {
         creamsody-theme
       ])
       ++ [
+        ats2-mode
         (epkgs.trivialBuild {
           pname = "odin-ts-mode";
           version = "unstable";
