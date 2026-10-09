@@ -15,55 +15,45 @@
   
   ;; Schema associations
   (setq lsp-yaml-schemas
-        '(;; Azure Pipelines
-          ("https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/main/service-schema.json" .
-           ["azure-pipelines.yml"
-            "azure-pipelines.yaml"
-            "**/azure-pipelines/**/*.yml"
-            "**/azure-pipelines/**/*.yaml"
-            "**/azure_pipelines/**/*.yml"
-            "**/azure_pipelines/**/*.yaml"
-            "**/.azure-pipelines/**/*.yml"
-            "**/.azure-pipelines/**/*.yaml"
-            "**/pipelines/**/*.yml"
-            "**/pipelines/**/*.yaml"])
-          
-          ;; GitHub Actions
-          (https://json.schemastore.org/github-workflow.json .
-           [".github/workflows/*.yml"
-            ".github/workflows/*.yaml"])
-          
-          ;; GitHub Actions (composite actions)
-          ("https://json.schemastore.org/github-action.json" .
-           ["action.yml"
-            "action.yaml"])
-          
-          ;; Docker Compose
-          ("https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json" .
-           ["docker-compose.yml"
-            "docker-compose.yaml"
-            "docker-compose.*.yml"
-            "docker-compose.*.yaml"
-            "compose.yml"
-            "compose.yaml"])
-          
-          ;; Kubernetes
-          ("kubernetes" .
-           ["**/kubernetes/**/*.yml"
-            "**/kubernetes/**/*.yaml"
-            "**/k8s/**/*.yml"
-            "**/k8s/**/*.yaml"
-            "**/manifests/**/*.yml"
-            "**/manifests/**/*.yaml"
-            "deployment.yml"
-            "deployment.yaml"
-            "service.yml"
-            "service.yaml"])
-          
-          ;; Helm
-          ("https://json.schemastore.org/chart.json" .
-           ["Chart.yml"
-            "Chart.yaml"]))))
+	;; Azure pipelines
+        `((,(intern "https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/main/service-schema.json")
+           . ["azure-pipelines.yml"
+              "azure-pipelines.yaml"
+              "**/azure-pipelines/**/*.yml"
+              "**/azure-pipelines/**/*.yaml"
+              "**/azure_pipelines/**/*.yml"
+              "**/azure_pipelines/**/*.yaml"
+              "**/.azure-pipelines/**/*.yml"
+              "**/.azure-pipelines/**/*.yaml"
+              "**/pipelines/**/*.yml"
+              "**/pipelines/**/*.yaml"])
+
+	  ;; Docker compose
+          (,(intern "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json")
+           . ["docker-compose.yml"
+              "docker-compose.yaml"
+              "docker-compose.*.yml"
+              "docker-compose.*.yaml"
+              "compose.yml"
+              "compose.yaml"])
+
+	  ;; Kubernetes
+          (,(intern "kubernetes")
+           . ["**/kubernetes/**/*.yml"
+              "**/kubernetes/**/*.yaml"
+              "**/k8s/**/*.yml"
+              "**/k8s/**/*.yaml"
+              "**/manifests/**/*.yml"
+              "**/manifests/**/*.yaml"
+              "deployment.yml"
+              "deployment.yaml"
+              "service.yml"
+              "service.yaml"])
+
+	  ;; Helm
+          (,(intern "https://json.schemastore.org/chart.json")
+           . ["Chart.yml"
+              "Chart.yaml"]))))
 
 ;;;; Custom Indentation
 (defun weo/yaml-cycle-indent ()
