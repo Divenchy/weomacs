@@ -2,7 +2,7 @@
 
 ;; Ghostel ;;
 (global-set-key (kbd "C-c v") 'ghostel)
-(global-set-key (kbd "<F9>") 'ghostel-emacs-mode)
+(global-set-key (kbd "<f9>") 'ghostel-emacs-mode)
 
 ;; Claude Code IDE
 (global-set-key (kbd "C-~") 'claude-code-ide-toggle)
@@ -75,6 +75,7 @@
 (global-set-key (kbd "M-p") #'harpoon-cycle-prev)
 
 ;; Magit ;;
+(global-set-key (kbd "M-g g") 'magit)
 (global-set-key (kbd "C-c m s") 'magit-status)
 (global-set-key (kbd "C-c m l") 'magit-log)
 

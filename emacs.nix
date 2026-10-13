@@ -105,6 +105,7 @@ in {
         mix
 
         # Dev
+        exec-path-from-shell
         ghostel
         direnv
         magit
@@ -185,7 +186,6 @@ in {
         })
       ];
 
-    extraConfig = builtins.readFile ./init.el;
   };
 
   # Symlink weomacs lisp files into ~/.emacs.d

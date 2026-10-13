@@ -26,7 +26,7 @@
 (load-theme 'ef-owl t) ;; Default theme
 (define-prefix-command 'theme-prefix)
 (global-set-key (kbd "C-c t") 'theme-prefix)
-(global-set-key (kbd "C-x t") #'counsel-load-theme)
+(define-key theme-prefix (kbd "t") #'consult-theme) ;; pick any installed theme, with preview
 (define-key theme-prefix (kbd "h") #'load-theme-doom-henna)
 (define-key theme-prefix (kbd "s") #'load-theme-doom-snazzy)
 (define-key theme-prefix (kbd "d") #'load-theme-hyperstitional-digitsear)

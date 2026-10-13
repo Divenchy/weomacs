@@ -81,7 +81,7 @@
 ;;; Consult - Enhanced search commands
 (use-package consult
   :bind (("C-s" . consult-line)           ; Better isearch
-         ("M-g g" . consult-goto-line)
+         ("M-l" . consult-goto-line)
          ("C-S-c" . consult-history)
 	 ("M-r" . consult-ripgrep)
 	 ("M-y" . consult-yank-pop)))      ; Better kill ring
