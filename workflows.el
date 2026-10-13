@@ -40,3 +40,9 @@
       (delete-other-windows))))
 
 (global-set-key (kbd "C-c w") #'my/toggle-window-layout)
+
+;; Claude Code IDE ;;
+(use-package claude-code-ide
+  :bind ("C-c C-'" . claude-code-ide-menu)
+  :config
+  (claude-code-ide-emacs-tools-setup))

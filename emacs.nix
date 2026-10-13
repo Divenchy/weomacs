@@ -10,6 +10,21 @@
       }} $out/ats2-mode.el
     '';
   };
+  claude-code-ide = pkgs.emacsPackages.trivialBuild {
+    pname = "claude-code-ide";
+    version = "unstable";
+    src = pkgs.fetchFromGitHub {
+      owner = "manzaltu";
+      repo = "claude-code-ide.el";
+      rev = "50a3d55262805d7207889ed429ff30da96fbf68b";
+      hash = "sha256-u+87PjLh0Mc7C8nvDG758rdgpmjED8G/hO+FE1tj7DU=";
+    };
+    packageRequires = with pkgs.emacsPackages; [websocket transient web-server vterm];
+    # Tests pull in extra deps and aren't needed at runtime
+    postUnpack = ''
+      rm $sourceRoot/claude-code-ide-tests.el
+    '';
+  };
   tree-sitter-odin = pkgs.tree-sitter.buildGrammar {
     language = "odin";
     version = "unstable";
@@ -157,6 +172,7 @@ in {
       ])
       ++ [
         ats2-mode
+        claude-code-ide
         (epkgs.trivialBuild {
           pname = "odin-ts-mode";
           version = "unstable";
