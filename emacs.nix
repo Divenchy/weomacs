@@ -105,6 +105,7 @@ in {
         mix
 
         # Dev
+        ghostel
         direnv
         magit
         projectile
