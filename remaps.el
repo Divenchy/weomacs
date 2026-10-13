@@ -2,6 +2,10 @@
 
 ;; Ghostel ;;
 (global-set-key (kbd "C-c v") 'ghostel)
+(global-set-key (kbd "<F9>") 'ghostel-emacs-mode)
+
+;; Claude Code IDE
+(global-set-key (kbd "C-~") 'claude-code-ide-toggle)
 
 ;; Avy ;;
 (global-set-key (kbd "C-,") 'avy-goto-char)
