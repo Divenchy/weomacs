@@ -44,5 +44,7 @@
 ;; Claude Code IDE ;;
 (use-package claude-code-ide
   :bind ("C-c C-'" . claude-code-ide-menu)
+  :custom
+  (claude-code-ide-terminal-backend 'ghostel)
   :config
   (claude-code-ide-emacs-tools-setup))

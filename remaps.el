@@ -1,8 +1,7 @@
 ;;; remaps.el --- Key remappings -*- lexical-binding: t -*-
 
-;; VTerm ;;
-(global-set-key (kbd "C-c v") 'vterm)
-(global-set-key (kbd "C-c C-y") 'vterm-yank)
+;; Ghostel ;;
+(global-set-key (kbd "C-c v") 'ghostel)
 
 ;; Avy ;;
 (global-set-key (kbd "C-,") 'avy-goto-char)

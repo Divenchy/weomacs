@@ -53,7 +53,7 @@
 (global-display-line-numbers-mode t)
 ;; Disable rel nums lines for select modes
 (dolist (mode '(org-mode-hook
-		vterm-mode-hook
+		ghostel-mode-hook
 		term-mode-hook
 		shell-mode-hook
 		eshell-mode-hook))
