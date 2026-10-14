@@ -1,4 +1,4 @@
-{pkgs, ...}: let
+{pkgs, lib, ...}: let
   ats2-mode = pkgs.emacsPackages.trivialBuild {
     pname = "ats2-mode";
     version = "unstable";
@@ -84,6 +84,14 @@ in {
   programs.emacs = {
     enable = true;
     package = pkgs.emacs;
+
+    # lsp-mode bakes plist-vs-hash-table accessors into its byte-code at compile time (see
+    # early-init.el).
+    overrides = self: super:
+      lib.genAttrs ["lsp-mode" "lsp-ui" "lsp-treemacs" "dap-mode"] (name:
+        super.${name}.overrideAttrs (old: {
+          env = (old.env or {}) // {LSP_USE_PLISTS = "true";};
+        }));
 
     extraPackages = epkgs:
       (with epkgs; [
@@ -185,7 +193,6 @@ in {
           };
         })
       ];
-
   };
 
   # Symlink weomacs lisp files into ~/.emacs.d
@@ -201,6 +208,7 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-ada.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-ada}/parser";
     
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
+    ".emacs.d/early-init.el".source = ./early-init.el;
     ".emacs.d/init.el".source = ./init.el;
     ".emacs.d/eshell.el".source = ./eshell.el;
     ".emacs.d/qol.el".source = ./qol.el;

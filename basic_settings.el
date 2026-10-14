@@ -75,5 +75,7 @@
 ;; Add pwsh-ls to path
 (use-package exec-path-from-shell
   :config
+  ;; Keep LSP_USE_PLISTS (set in early-init.el) consistent with the shell environment
+  (add-to-list 'exec-path-from-shell-variables "LSP_USE_PLISTS")
   (when (memq window-system '(mac ns x pgtk))
     (exec-path-from-shell-initialize)))

@@ -5,7 +5,13 @@
 (global-set-key (kbd "<f9>") 'ghostel-emacs-mode)
 
 ;; Claude Code IDE
-(global-set-key (kbd "C-~") 'claude-code-ide-toggle)
+(global-set-key (kbd "M-c") 'claude-code-ide-toggle)
+;; ghostel sends every key not in `ghostel-keymap-exceptions' to the terminal
+;; customize-set-variable runs the option's :set, which rebuilds the semi-char keymap.
+(with-eval-after-load 'ghostel
+  (unless (member "M-c" ghostel-keymap-exceptions)
+    (customize-set-variable 'ghostel-keymap-exceptions
+                            (cons "M-c" ghostel-keymap-exceptions))))
 
 ;; Avy ;;
 (global-set-key (kbd "C-,") 'avy-goto-char)
@@ -119,7 +125,7 @@
   (backward-char 1))  ;; stay on replaced char, like Vim
 
 ;; Copy ;;
-(global-set-key (kbd "M-c") 'copy-from-above-command)
+(global-set-key (kbd "M-S-Y") 'copy-from-above-command)
 
 ;; Yanking ;;
 (global-set-key (kbd "C-M-y") 'counsel-yank-pop)

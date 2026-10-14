@@ -83,6 +83,25 @@
 ;;(require 'ats2-mode)
 ;;(add-to-list 'auto-mode-alist '("\\.\\(sats\\|dats\\|hats\\|cats\\)\\'" . ats2-mode))
 
+;;;; LSP Performance
+;; - Native JSON: built into Emacs 30+, nothing to do.
+;; - Plists: LSP_USE_PLISTS is set in early-init.el
+
+;; Server responses can be several MB; the 4 KB default means many small reads
+(setq read-process-output-max (* 3 1024 1024)) ; 3 MB
+
+(defun weo/lsp-check-plists ()
+  "Warn if lsp-mode's byte-code disagrees with `lsp-use-plists'.
+A mismatch makes every protocol accessor return nil, which breaks LSP silently."
+  (let ((compiled-with-plists (equal (lsp:hover-contents (list :contents t)) t)))
+    (unless (eq compiled-with-plists (and lsp-use-plists t))
+      (display-warning
+       'lsp-mode
+       (format "lsp-mode was compiled with plists %s but `lsp-use-plists' is %S. Set LSP_USE_PLISTS before \
+lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and dap-mode."
+               (if compiled-with-plists "on" "off") lsp-use-plists)
+       :error))))
+
 ;;;; LSP Mode Configuration
 (use-package lsp-mode
   :init
@@ -96,11 +115,31 @@
   (setq lsp-modeline-code-actions-enable t)
   
   (setq lsp-idle-delay 0.5)
-  (setq lsp-log-io nil)  ; Set to t for debugging
-  (setq gc-cons-threshold 100000000)
-  (setq read-process-output-max (* 1024 1024))
+  (setq lsp-log-io nil)  ; Set to t for debugging; slows everything down
 
   :config
+  (weo/lsp-check-plists)
+
+  ;; lsp-mode's defaults already cover target, _build, obj, .gradle, ...
+  (dolist (dir '("[/\\\\]build\\'"
+                 "[/\\\\]out\\'"
+                 "[/\\\\]bin\\'"
+                 "[/\\\\]cmake-build-[^/\\\\]+\\'"
+                 "[/\\\\]\\.cache\\'"
+                 "[/\\\\]artifacts\\'"
+                 "[/\\\\]TestResults\\'"
+                 "[/\\\\]\\.zig-cache\\'"
+                 "[/\\\\]zig-cache\\'"
+                 "[/\\\\]zig-out\\'"
+                 "[/\\\\]alire\\'"
+                 "[/\\\\]deps\\'"
+                 "[/\\\\]ebin\\'"
+                 "[/\\\\]cover\\'"
+                 "[/\\\\]_checkouts\\'"
+                 "[/\\\\]\\.expert\\'"))
+    (add-to-list 'lsp-file-watch-ignored-directories dir))
+
+
   (dolist (config '((c-ts-mode . "c")
 		    (c++-ts-mode . "cpp")
 		    (ada-ts-mode . "ada")

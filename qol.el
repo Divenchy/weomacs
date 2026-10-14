@@ -137,8 +137,8 @@
   ;; Seconds of idle time before GC
   (gcmh-idle-delay 10)
   
-  ;; High threshold during normal operation (default 1GB might be too high)
-  (gcmh-high-cons-threshold (* 256 1024 1024))  ;; 256 MB
+  ;; High threshold during normal operation
+  (gcmh-high-cons-threshold (* 1000 1024 1024))  ;; 1 GB
     
   ;; Be verbose (useful for debugging)
   (gcmh-verbose nil)
