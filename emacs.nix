@@ -37,9 +37,7 @@
   };
 in {
   home.packages = with pkgs; [
-    dotnet-sdk_11
     csharp-ls
-    netcoredbg
 
     gprbuild
     alire    
