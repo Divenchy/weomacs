@@ -22,6 +22,8 @@
 ;; this is set using dir file (C-c p E)
 (use-package projectile
   :diminish projectile-mode
+  ;; not autoloaded upstream; `weo/workspace-switch' needs them before C-c p loads projectile
+  :commands (projectile-relevant-known-projects projectile-switch-project-by-name)
   :config
   (projectile-mode)
   (setq projectile-auto-discover t)
