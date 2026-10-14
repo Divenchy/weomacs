@@ -210,7 +210,6 @@
 (global-set-key (kbd "C-c f") 'file-prefix)
 (define-prefix-command 'buffer-prefix)
 (global-set-key (kbd "C-c b") 'buffer-prefix)
-(bind-key* "M-q" #'consult-buffer)
 
 (global-set-key (kbd "M-s") #'save-buffer) 
 

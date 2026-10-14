@@ -63,6 +63,18 @@
   :hook
   ;; Clean up file path when typing
   (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+;; Telescope-style floating picker, scoped to the commands listed here
+(use-package vertico-posframe
+  :after vertico
+  :custom
+  (vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  (vertico-posframe-width 120)
+  (vertico-posframe-border-width 2)
+  (vertico-multiform-commands '((consult-recent-file posframe)))
+  :config
+  (vertico-multiform-mode 1))
+
 (use-package vertico-prescient
   :after vertico
   :config
@@ -77,6 +89,14 @@
 (use-package marginalia
   :init
   (marginalia-mode))
+
+;;; Recentf - Track recently opened files (consult-recent-file reads recentf-list)
+(use-package recentf
+  :custom
+  (recentf-max-saved-items 200)
+  (recentf-exclude '("^/nix/store/" "COMMIT_EDITMSG\\'"))
+  :config
+  (recentf-mode 1))
 
 ;;; Consult - Enhanced search commands
 (use-package consult

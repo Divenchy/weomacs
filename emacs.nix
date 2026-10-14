@@ -118,7 +118,6 @@ in {
         direnv
         magit
         projectile
-        perspective
         lsp-mode
         lsp-ui
         lsp-treemacs
@@ -146,6 +145,7 @@ in {
         kind-icon
         orderless
         vertico
+        vertico-posframe
         marginalia
         consult
         embark
