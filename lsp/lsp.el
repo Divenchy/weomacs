@@ -114,7 +114,7 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
   (setq lsp-modeline-diagnostics-enable t)
   (setq lsp-modeline-code-actions-enable t)
   
-  (setq lsp-idle-delay 0.5)
+  (setq lsp-idle-delay 0.2)
   (setq lsp-log-io nil)  ; Set to t for debugging; slows everything down
 
   :config

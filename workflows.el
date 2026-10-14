@@ -8,7 +8,13 @@
 (use-package magit
   :commands (magit-status magit-get-current-branch)
   :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)) ;; Makes Magit appear in the same window 
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1) ;; Makes Magit appear in the same window
+  (magit-refresh-status-buffer nil)
+  (magit-revision-insert-related-refs nil)
+  (auto-revert-buffer-list-filter #'magit-auto-revert-repository-buffer-p)
+  :config
+  ;; `git describe' walks the whole history
+  (remove-hook 'magit-status-headers-hook #'magit-insert-tags-header))
 
 ;; Projectile ;;
 
