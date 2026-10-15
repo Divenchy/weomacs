@@ -61,7 +61,8 @@
   (local-set-key (kbd "C-c C-t") #'weo/dotnet-test)
   (local-set-key (kbd "C-c C-w") #'weo/dotnet-watch)
   (local-set-key (kbd "C-c C-c") #'weo/dotnet-clean)
-  (local-set-key (kbd "C-c C-p") #'weo/dotnet-add-package))
+  (local-set-key (kbd "C-c C-p") #'weo/dotnet-add-package)
+  (local-set-key (kbd "C-c C-e") #'weo/test-explorer))
 
 (add-hook 'csharp-mode-hook #'weo/csharp-setup)
 (add-hook 'csharp-ts-mode-hook #'weo/csharp-setup)

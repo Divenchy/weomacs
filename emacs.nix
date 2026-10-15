@@ -219,6 +219,7 @@ in {
     ".emacs.d/org.el".source = ./org.el;
     ".emacs.d/lsp/lsp.el".source = ./lsp/lsp.el;
     ".emacs.d/lsp/debugging.el".source = ./lsp/debugging.el;
+    ".emacs.d/lsp/TestExplorer.el".source = ./lsp/TestExplorer.el;
     ".emacs.d/lsp/langs/zig.el".source = ./lsp/langs/zig.el;
     ".emacs.d/lsp/langs/yaml.el".source = ./lsp/langs/yaml.el;
     ".emacs.d/lsp/langs/csharp.el".source = ./lsp/langs/csharp.el;
