@@ -90,7 +90,7 @@
 ;; - Plists: LSP_USE_PLISTS is set in early-init.el
 
 ;; Server responses can be several MB; the 4 KB default means many small reads
-(setq read-process-output-max (* 3 1024 1024)) ; 3 MB
+(setq read-process-output-max (* 1024 1024)) ; Max is 1 MB, it don't hurt to max why not
 
 (defun weo/lsp-check-plists ()
   "Warn if lsp-mode's byte-code disagrees with `lsp-use-plists'.
@@ -219,15 +219,10 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
       :server-id 'elixir-ls
       :priority 1))))
 
-;; CSharp LS
+;; CSharp LS (client comes from lsp-csharp; defs into BCL/NuGet need metadata URIs)
 (with-eval-after-load 'lsp-mode
-  (when (executable-find "csharp-ls")
-    (lsp-register-client
-     (make-lsp-client
-      :new-connection (lsp-stdio-connection '("csharp-ls"))
-      :major-modes '(csharp-mode csharp-ts-mode)
-      :server-id 'csharp-ls
-      :priority 1))))
+  (lsp-register-custom-settings '(("csharp.useMetadataUris" t t))))
+(put 'lsp-csharp-solution-file 'safe-local-variable #'stringp)
 
 ;;;; Completion Setup for LSP
 (defun weo/lsp-mode-setup-completion ()

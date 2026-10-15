@@ -156,10 +156,11 @@
   :diminish gcmh-mode
   :custom
   ;; Seconds of idle time before GC
-  (gcmh-idle-delay 10)
+  (gcmh-idle-delay 'auto)
   
   ;; High threshold during normal operation
-  (gcmh-high-cons-threshold (* 1000 1024 1024))  ;; 1 GB
+  ;; Too high, might build too much garbage and take a while to clear, 256 MB
+  (gcmh-high-cons-threshold (* 256 1024 1024))
     
   ;; Be verbose (useful for debugging)
   (gcmh-verbose nil)
