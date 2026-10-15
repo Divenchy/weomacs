@@ -71,7 +71,8 @@
   (vertico-posframe-poshandler #'posframe-poshandler-frame-center)
   (vertico-posframe-width 120)
   (vertico-posframe-border-width 2)
-  (vertico-multiform-commands '((consult-recent-file posframe)))
+  (vertico-multiform-commands '((consult-recent-file posframe)
+                                (find-file posframe)))
   :config
   (vertico-multiform-mode 1))
 

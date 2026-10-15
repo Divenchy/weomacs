@@ -21,6 +21,7 @@
 (show-paren-mode 1)
 (global-subword-mode 1)
 (repeat-mode 1)
+(global-auto-revert-mode 1)
 (setq bookmark-save-flag 1)
 (setq default-directory (concat (getenv "HOME") "/"))
 
@@ -42,10 +43,6 @@
 ;; Global activation
 (global-ligature-mode t)
 
-;; Eshell Path
-(setq eshell-directory-name (expand-file-name "~/.emacs.d/eshell/"))
-(setq eshell-default-directory (expand-file-name "~/"))
-
 ;; Editing ;;
 (setq-default truncate-lines t) ;; Word-wrap
 (column-number-mode)
@@ -55,12 +52,30 @@
 (dolist (mode '(org-mode-hook
 		ghostel-mode-hook
 		term-mode-hook
-		shell-mode-hook
-		eshell-mode-hook))
+		shell-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 (setq visible-bell t)
-(show-paren-mode 1)
 (electric-pair-mode 1)
+(defun weo/electric-pair-wrap-word (char)
+  "Better wrapping with pairing tokens."
+  (cond
+   ((and (eq (char-syntax char) ?\")
+	 (oddp (how-many (regexp-quote (string char)) (pos-bol) (1-(point)))))
+    t)
+   ((memq (char-syntax (or (char-after) ?\s)) '(?w ?_))
+    (unless (memq (char-syntax (or (char-before (1-(point))) ?\s)) '(?w ?_))
+      (save-excursion
+	;; Treat dotted names as one word
+	(while (progn (skip-syntax-forward "w_")
+		      (and (eq (char-after) ?.)
+			   (memq (char-syntax (or (char-after (1+(point))) ?\s)) '(?w ?_))))
+	  (forward-char))
+	(insert (or (matching-paren char) char))))
+    t)))
+;; Per buffer, since c-mode csharp-mode install their own predicate
+(add-hook 'after-change-major-mode-hook
+	  (lambda ()
+	    (add-function :before-until (local 'electric-pair-inhibit-predicate) #'weo/electric-pair-wrap-word)))
 
 (setq-default fill-column 110)
 (setq-default display-fill-column-indicator-column 110)

@@ -8,8 +8,10 @@
 ;;;; Project Root
 (defun weo/powershell-project-root ()
   "Find PowerShell project/module root."
-  (or (locate-dominating-file default-directory "*.psd1")
-      (locate-dominating-file default-directory "*.psm1")
+  (or (locate-dominating-file default-directory
+                              (lambda (dir) (directory-files dir nil "\\.psd1\\'")))
+      (locate-dominating-file default-directory
+                              (lambda (dir) (directory-files dir nil "\\.psm1\\'")))
       default-directory))
 
 ;;;; Run Commands

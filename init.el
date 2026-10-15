@@ -5,9 +5,7 @@
 
 ;; Emacs remaps
 (load-file "~/.emacs.d/remaps.el")
-
-;; Eshell setup
-(load-file "~/.emacs.d/eshell.el")
+(load-file "~/.emacs.d/navigator.el")
 
 ;; Custom funcs
 (load-file "~/.emacs.d/visible-mark.el")

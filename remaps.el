@@ -2,83 +2,31 @@
 
 ;; Ghostel ;;
 (global-set-key (kbd "C-c v") 'ghostel)
-(global-set-key (kbd "<f9>") 'ghostel-emacs-mode)
 
-;; Claude Code IDE
-(global-set-key (kbd "M-c") 'claude-code-ide-toggle)
+(defun weo/ghostel-toggle ()
+  "Hide the terminal when in one, else show the project's terminal (or the plain one outside a project)."
+  (interactive)
+  (cond ((derived-mode-p 'ghostel-mode) (quit-window))
+        ((project-current) (ghostel-project))
+        (t (ghostel))))
+(global-set-key (kbd "C-c e") #'weo/ghostel-toggle)
+
 ;; ghostel sends every key not in `ghostel-keymap-exceptions' to the terminal
 ;; customize-set-variable runs the option's :set, which rebuilds the semi-char keymap.
 (with-eval-after-load 'ghostel
-  (unless (member "M-c" ghostel-keymap-exceptions)
-    (customize-set-variable 'ghostel-keymap-exceptions
-                            (cons "M-c" ghostel-keymap-exceptions))))
+  (dolist (key '("M-c" "M-]"))
+    (unless (member key ghostel-keymap-exceptions)
+      (customize-set-variable 'ghostel-keymap-exceptions
+                              (cons key ghostel-keymap-exceptions))))
+  ;; Parent of the semi-char and read-only maps, so M-] both enters and leaves Emacs mode
+  (define-key ghostel-mode-map (kbd "M-]") #'ghostel-emacs-mode))
+
+;; Claude Code IDE
+(global-set-key (kbd "M-c") 'claude-code-ide-toggle)
 
 ;; Avy ;;
 (global-set-key (kbd "C-,") 'avy-goto-char)
-(global-set-key (kbd "M-,") 'avy-goto-char-2)
 (global-set-key (kbd "M-g l") 'avy-goto-line)
-
-;; Getting harpoony ;;
-(dotimes (i 9)
-  (let ((n (number-to-string (1+ i))))
-    ;; C-c h 1 .. C-c h 9 to *set* bookmark
-    (global-set-key
-     (kbd (concat "C-c h " n))
-     `(lambda () (interactive)
-        (bookmark-set (concat "slot-" ,n))))
-
-    ;; C-c j 1 .. C-c j 9 to *jump* to bookmark
-    (global-set-key
-     (kbd (concat "C-c j " n))
-     `(lambda () (interactive)
-        (let ((slot-num ,(string-to-number n))
-              (used-slots (harpoon-get-used-slots)))
-          ;; Set cycle index to this slot's position
-          (setq harpoon-current-index
-                (or (cl-position slot-num used-slots) 0))
-          (bookmark-jump (concat "slot-" ,n)))))))
-
-(defvar harpoon-current-index 0
-  "Current index in the list of used harpoon slots.")
-
-(defun harpoon-get-used-slots ()
-  "Return a sorted list of slot numbers that have bookmarks set."
-  (let (used-slots)
-    (dotimes (i 9)
-      (let* ((n (1+ i))
-             (name (concat "slot-" (number-to-string n))))
-        (when (bookmark-get-bookmark name t)
-          (push n used-slots))))
-    (nreverse used-slots)))
-
-(defun harpoon-cycle-next ()
-  "Jump to the next used harpoon slot, cycling through."
-  (interactive)
-  (let ((used-slots (harpoon-get-used-slots)))
-    (if (null used-slots)
-        (message "No harpoon slots set")
-      (let* ((len (length used-slots)))
-        (setq harpoon-current-index (mod (1+ harpoon-current-index) len))
-        (let ((slot (nth harpoon-current-index used-slots)))
-          (bookmark-jump (concat "slot-" (number-to-string slot)))
-          (message "Harpoon slot %d (%d/%d)" slot
-                   (1+ harpoon-current-index) len))))))
-
-(defun harpoon-cycle-prev ()
-  "Jump to the previous used harpoon slot, cycling through."
-  (interactive)
-  (let ((used-slots (harpoon-get-used-slots)))
-    (if (null used-slots)
-        (message "No harpoon slots set")
-      (let* ((len (length used-slots)))
-        (setq harpoon-current-index (mod (1- harpoon-current-index) len))
-        (let ((slot (nth harpoon-current-index used-slots)))
-          (bookmark-jump (concat "slot-" (number-to-string slot)))
-          (message "Harpoon slot %d (%d/%d)" slot
-                   (1+ harpoon-current-index) len))))))
-
-(global-set-key (kbd "M-n") #'harpoon-cycle-next)
-(global-set-key (kbd "M-p") #'harpoon-cycle-prev)
 
 ;; Magit ;;
 (global-set-key (kbd "M-g g") 'magit)
@@ -128,8 +76,25 @@
 (global-set-key (kbd "M-S-Y") 'copy-from-above-command)
 
 ;; Yanking ;;
-(global-set-key (kbd "C-M-y") 'counsel-yank-pop)
+(defun weo/yank-line ()
+  "Copy the current line to the kill ring."
+  (interactive)
+  (let ((beg (line-beginning-position))
+        (end (line-end-position)))
+    (kill-ring-save beg end)
+     (message "Line copied")))
 
+(global-set-key (kbd "C-M-y") #'weo/yank-line)
+
+;; Standardize C-y
+(defun weo/yank-replace-region ()
+  "Replace active region with yanked content."
+  (interactive)
+  (when (use-region-p)
+    (delete-region (region-beginning) (region-end)))
+  (yank))
+
+(global-set-key (kbd "C-y") #'weo/yank-replace-region)
 ;;;;;;;;;; Mark/Registers ;;;;;;;;;;
 (defun weo/clear-mark-ring-command ()
   "Run your command or clear the mark-ring."
@@ -185,25 +150,7 @@
 
 (global-set-key (kbd "M-i") 'back-to-indentation)
 
-(defun weo/yank-line ()
-  "Copy the current line to the kill ring."
-  (interactive)
-  (let ((beg (line-beginning-position))
-        (end (line-end-position)))
-    (kill-ring-save beg end)
-     (message "Line copied")))
 
-(global-set-key (kbd "C-M-y") #'weo/yank-line)
-
-;; Standardize C-y
-(defun weo/yank-replace-region ()
-  "Replace active region with yanked content."
-  (interactive)
-  (when (use-region-p)
-    (delete-region (region-beginning) (region-end)))
-  (yank))
-
-(global-set-key (kbd "C-y") #'weo/yank-replace-region)
 
 ;;;;;;;; Files & Buffers ;;;;;;;;
 (define-prefix-command 'file-prefix)
@@ -216,6 +163,8 @@
 (define-key file-prefix (kbd "f") #'find-file)
 (define-key file-prefix (kbd "r") #'consult-recent-file)
 (define-key file-prefix (kbd "p") #'project-find-file)
+;; Replaces `zap-to-char'; posframe UI comes from `vertico-multiform-commands' in qol.el
+(global-set-key (kbd "M-z") #'find-file)
 
 (define-key buffer-prefix (kbd "b") #'consult-buffer)
 (define-key buffer-prefix (kbd "e") #'eval-buffer)
@@ -227,12 +176,7 @@
     (kill-current-buffer)))
 
 ;; Quick buffer movement
-(global-set-key (kbd "M-<left>") #'previous-buffer)
-(global-set-key (kbd "M-<right>") #'previous-buffer)
-
 (global-set-key (kbd "C-`") #'mode-line-other-buffer)
-
-(global-set-key (kbd "<f11>") #'toggle-frame-fullscreen)
 
 ;;;;;;;; Windows & Frames ;;;;;;;;
 (define-prefix-command 'window-prefix)
@@ -265,7 +209,7 @@
 (define-key window-prefix (kbd "+") 'enlarge-window)
 (define-key window-prefix (kbd "-") 'shrink-window)
 (define-key window-prefix (kbd "{") 'shrink-window-horizontally)
-(define-key window-prefix (kbd "}") 'shrink-window-horizontally)
+(define-key window-prefix (kbd "}") 'enlarge-window-horizontally)
 (define-key window-prefix (kbd "=") 'balance-windows)
 
 ;; Windows/Frames Repeatability
@@ -273,8 +217,8 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "n") #'my-next-window-in-frame)
     (define-key map (kbd "p") #'my-prev-window-in-frame)
-    (define-key map (kbd "v") #'split-window-vertically)
-    (define-key map (kbd "h") #'split-window-horizontally)
+    (define-key map (kbd "v") #'split-window-horizontally)
+    (define-key map (kbd "h") #'split-window-vertically)
     (define-key map (kbd "w") #'my-delete-window)
     (define-key map (kbd "+") 'enlarge-window)
     (define-key map (kbd "-") 'shrink-window)

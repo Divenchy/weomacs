@@ -13,6 +13,8 @@
   :bind (:map corfu-map
               ("M-n" . corfu-next)
               ("M-p" . corfu-previous)
+              ([remap next-line] . nil)
+              ([remap previous-line] . nil)
               ("C-i" . corfu-insert)
               ("RET" . nil)
               ("M-d" . corfu-popupinfo-toggle))

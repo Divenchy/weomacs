@@ -59,13 +59,6 @@
   (let ((default-directory (or (weo/elixir-project-root) default-directory)))
     (compile (format "mix %s" task))))
 
-(defun weo/mix-format ()
-  "Format current buffer with mix format."
-  (interactive)
-  (when (buffer-file-name)
-    (shell-command (format "mix format %s" (shell-quote-argument (buffer-file-name))))
-    (revert-buffer t t t)))
-
 ;;;; IEx REPL
 (defun weo/elixir-iex ()
   "Start IEx in a term buffer."
@@ -80,7 +73,9 @@
   :config
   (reformatter-define elixir-format
     :program "mix"
-    :args '("format" "-")
+    ;; --stdin-filename lets .formatter.exs plugins (e.g. heex) pick the right formatter
+    :args `("format" ,@(when buffer-file-name (list "--stdin-filename" buffer-file-name)) "-")
+    :working-directory (weo/elixir-project-root)
     :stdin t
     :stdout t))
 
@@ -111,9 +106,9 @@
   (local-set-key (kbd "C-c C-d") #'weo/mix-deps-get)
   (local-set-key (kbd "C-c C-r") #'weo/mix-run-task)
   (local-set-key (kbd "C-c C-z") #'weo/elixir-iex)
-  (local-set-key (kbd "C-c C-l") #'weo/mix-format)
+  (local-set-key (kbd "C-c C-l") #'elixir-format-buffer)
   ;; Format on save
-  (add-hook 'before-save-hook #'weo/mix-format nil t))
+  (elixir-format-on-save-mode 1))
 
 (add-hook 'elixir-ts-mode-hook #'weo/elixir-setup)
 (add-hook 'elixir-mode-hook #'weo/elixir-setup)

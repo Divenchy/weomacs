@@ -53,23 +53,6 @@
         (compile (format "zig ast-check %s" (shell-quote-argument file)))
       (message "Buffer is not visiting a file"))))
 
-;;;; Formatting
-(defun weo/zig-format-buffer ()
-  "Format current buffer with zig fmt."
-  (interactive)
-  (let ((file (buffer-file-name))
-        (point-pos (point)))
-    (when file
-      (save-buffer)
-      (shell-command (format "zig fmt %s" (shell-quote-argument file)))
-      (revert-buffer t t t)
-      (goto-char point-pos))))
-
-(defun weo/zig-format-on-save ()
-  "Format buffer before saving."
-  (when (derived-mode-p 'zig-mode)
-    (weo/zig-format-buffer)))
-
 ;;;; Documentation
 (defun weo/zig-doc-std ()
   "Open Zig standard library documentation in browser."
@@ -210,10 +193,11 @@ const allocator = gpa.allocator();
   (local-set-key (kbd "C-c i a") #'weo/zig-insert-allocator)
   
   ;; LSP
-  (local-set-key (kbd "C-c l r") #'weo/zig-restart-lsp))
+  (local-set-key (kbd "C-c l r") #'weo/zig-restart-lsp)
+
+  ;; zig fmt on save; reformatter command from zig-mode (zig-ts-mode has none)
+  (zig-format-on-save-mode 1))
 
 (add-hook 'zig-ts-mode-hook #'weo/zig-setup)
-
-(add-hook 'before-save-hook #'weo/zig-format-on-save)
 
 (provide 'zig)

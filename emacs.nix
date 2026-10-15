@@ -37,7 +37,6 @@
   };
 in {
   home.packages = with pkgs; [
-    dotnet-sdk_11
     csharp-ls
     netcoredbg
 
@@ -146,6 +145,7 @@ in {
         orderless
         vertico
         vertico-posframe
+        posframe
         marginalia
         consult
         embark
@@ -162,8 +162,7 @@ in {
         pdf-tools
         org
         org-bullets
-        eshell-git-prompt
-        
+
         # Presentation
         visual-fill-column
         command-log-mode
@@ -210,11 +209,11 @@ in {
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/early-init.el".source = ./early-init.el;
     ".emacs.d/init.el".source = ./init.el;
-    ".emacs.d/eshell.el".source = ./eshell.el;
     ".emacs.d/qol.el".source = ./qol.el;
     ".emacs.d/visible-mark.el".source = ./visible-mark.el;
     ".emacs.d/workflows.el".source = ./workflows.el;
     ".emacs.d/remaps.el".source = ./remaps.el;
+    ".emacs.d/navigator.el".source = ./navigator.el;
     ".emacs.d/themes.el".source = ./themes.el;
     ".emacs.d/org.el".source = ./org.el;
     ".emacs.d/lsp/lsp.el".source = ./lsp/lsp.el;
