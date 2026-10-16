@@ -72,7 +72,11 @@
   (vertico-posframe-width 120)
   (vertico-posframe-border-width 2)
   (vertico-multiform-commands '((consult-recent-file posframe)
-                                (find-file posframe)))
+                                (find-file posframe)
+                                (weo/refactor-this posframe
+                                                   (vertico-posframe-poshandler
+                                                    . posframe-poshandler-point-bottom-left-corner)
+                                                   (vertico-posframe-width . 60))))
   :config
   (vertico-multiform-mode 1))
 

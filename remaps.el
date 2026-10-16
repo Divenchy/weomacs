@@ -64,14 +64,6 @@
     (indent-according-to-mode)
     (forward-line 0)))         ;; move point to the newly created line
 
-;; Replace a character under point
-(defun weo/replace-char (char)
-  "Replace character under point with CHAR (like Vim's `r`)."
-  (interactive "cReplace with: ")
-  (delete-char 1)
-  (insert char)
-  (backward-char 1))  ;; stay on replaced char, like Vim
-
 ;; Copy ;;
 (global-set-key (kbd "M-S-Y") 'copy-from-above-command)
 
@@ -95,6 +87,11 @@
   (yank))
 
 (global-set-key (kbd "C-y") #'weo/yank-replace-region)
+
+;; Zapping
+(global-set-key (kbd "C-z") 'zap-up-to-char)
+(global-set-key (kbd "C-S-Z") 'zap-to-char)
+
 ;;;;;;;;;; Mark/Registers ;;;;;;;;;;
 (defun weo/clear-mark-ring-command ()
   "Run your command or clear the mark-ring."
@@ -163,8 +160,6 @@
 (define-key file-prefix (kbd "f") #'find-file)
 (define-key file-prefix (kbd "r") #'consult-recent-file)
 (define-key file-prefix (kbd "p") #'project-find-file)
-;; Replaces `zap-to-char'; posframe UI comes from `vertico-multiform-commands' in qol.el
-(global-set-key (kbd "M-z") #'find-file)
 
 (define-key buffer-prefix (kbd "b") #'consult-buffer)
 (define-key buffer-prefix (kbd "e") #'eval-buffer)

@@ -243,6 +243,7 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
 
 (load-file "~/.emacs.d/lsp/debugging.el")
 (load-file "~/.emacs.d/lsp/TestExplorer.el")
+(load-file "~/.emacs.d/lsp/refactorer.el")
 
 (load-file "~/.emacs.d/lsp/langs/zig.el")
 (load-file "~/.emacs.d/lsp/langs/elixir.el")

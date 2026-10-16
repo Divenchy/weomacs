@@ -25,6 +25,16 @@
 (require 'hl-line)
 
 (declare-function orderless-filter "orderless")
+(declare-function weo/dotnet-windows-available-p "csharp")
+(declare-function weo/dotnet-needs-windows-p "csharp")
+(declare-function weo/dotnet-run-on-windows-p "csharp")
+(declare-function weo/dotnet-windows-dir "csharp")
+(declare-function weo/dotnet-windows-path "csharp")
+(declare-function weo/dotnet-sync-command "csharp")
+(declare-function weo/dotnet-shell-command "csharp")
+(declare-function weo/dotnet-local-path "csharp")
+(declare-function weo/dotnet-cycle-platform "csharp")
+(defvar weo/dotnet-platform)
 
 ;;;; Options
 
@@ -112,6 +122,8 @@ without arguments contributes its own name, as NUnit does."
     (stop nerd-icons-codicon "nf-cod-debug_stop" "■")
     (playlist nerd-icons-codicon "nf-cod-checklist" "☰")
     (tests nerd-icons-codicon "nf-cod-beaker" "⚗")
+    (windows nerd-icons-mdicon "nf-md-microsoft_windows" "win")
+    (linux nerd-icons-mdicon "nf-md-linux" "linux")
     (close nerd-icons-codicon "nf-cod-close" "×")
     (clear nerd-icons-codicon "nf-cod-clear_all" "⌫"))
   "Icon key, nerd-icons function, glyph name and plain-text fallback.")
@@ -130,7 +142,7 @@ without arguments contributes its own name, as NUnit does."
 ;;;; Model
 
 (cl-defstruct (weo/test-explorer-project (:constructor weo/test-explorer--make-project) (:copier nil))
-  name csproj dir runner)
+  name csproj dir runner windows)
 
 (cl-defstruct (weo/test-explorer-test (:constructor weo/test-explorer--make-test) (:copier nil))
   id name class namespace project file line traits state duration results)
@@ -201,7 +213,8 @@ without arguments contributes its own name, as NUnit does."
                                 xml)
             (push (weo/test-explorer--make-project
                    :name (file-name-base file) :csproj file :dir (file-name-directory file)
-                   :runner (if (string-match-p "Include=\"TUnit[\".]" xml) 'tunit 'vstest))
+                   :runner (if (string-match-p "Include=\"TUnit[\".]" xml) 'tunit 'vstest)
+                   :windows (and (weo/dotnet-windows-available-p) (weo/dotnet-needs-windows-p file)))
                   projects)))))
     (sort projects :key (lambda (p) (length (weo/test-explorer-project-dir p))) :reverse t)))
 
@@ -583,7 +596,13 @@ Sections combine with AND; values within a section with OR, or AND when
                                                                   'weo/test-explorer-check)
                                          #'weo/test-explorer-toggle-mark "Select the group for running")
            (weo/test-explorer--group-state members)
-           (propertize label 'face 'weo/test-explorer-group)
+           (concat (propertize label 'face 'weo/test-explorer-group)
+                   (when (and (eq (car keys) 'project) (weo/dotnet-windows-available-p))
+                     (concat " " (weo/test-explorer--icon
+                                  (if (weo/test-explorer--windows-p
+                                       (weo/test-explorer-test-project (car members)))
+                                      'windows 'linux)
+                                  'weo/test-explorer-dim))))
            (length members) (weo/test-explorer--total-ms members)
            (list :path gpath :tests members))
           (when open
@@ -692,7 +711,9 @@ Sections combine with AND; values within a section with OR, or AND when
               (concat (weo/test-explorer--icon 'playlist) " "
                       (propertize (file-name-base (car weo/test-explorer--playlist)) 'face 'bold) "  "))
             weo/test-explorer--status
-            (when (> marked 0) (format "  · %d selected" marked)))))
+            (when (> marked 0) (format "  · %d selected" marked))
+            (when (not (eq weo/dotnet-platform 'auto))
+              (format "  · %s only" weo/dotnet-platform)))))
 
 (defun weo/test-explorer--sections ()
   "Filter sections over the current scope: ((SECTION (VALUE . COUNT) ...) ...)."
@@ -897,28 +918,33 @@ TOTALS maps class keys to their number of tests."
                              members)))
    "|"))
 
-(defun weo/test-explorer--tunit-commands (csproj out tests all totals)
-  "Commands running TESTS of the TUnit project CSPROJ, one per class unless ALL.
-TRX files go below OUT."
-  (let ((base (list "dotnet" "run" "--project" csproj "-p:UseAppHost=false")))
+(defun weo/test-explorer--windows-p (project)
+  "Non-nil if the tests of PROJECT run with the Windows SDK."
+  (weo/dotnet-run-on-windows-p (weo/test-explorer-project-windows project)))
+
+(defun weo/test-explorer--tunit-args (csproj out tests all totals)
+  "dotnet arguments running TESTS of the TUnit project CSPROJ.
+One argument list per class unless ALL.  OUT maps a results directory
+name to the path passed to dotnet."
+  (let ((base (list "run" "--project" csproj "-p:UseAppHost=false")))
     (if all
-        (list (weo/test-explorer--shell base "--" "--report-trx" "--results-directory" out))
+        (list (list base "--" "--report-trx" "--results-directory" (funcall out "0")))
       (cl-loop for (key . members) in (seq-group-by #'weo/test-explorer--class-key tests)
                for i from 0
                for test = (car members)
-               collect (weo/test-explorer--shell
-                        base (and (> i 0) "--no-build") "--" "--treenode-filter"
-                        (format "/*/%s/%s/%s"
-                                (or (weo/test-explorer-test-namespace test) "*")
-                                (weo/test-explorer-test-class test)
-                                (if (= (length members) (gethash key totals 0))
-                                    "*"
-                                  (mapconcat (lambda (m) (format "(%s)" (weo/test-explorer-test-name m)))
-                                             members "|")))
-                        "--report-trx" "--results-directory" (expand-file-name (number-to-string i) out))))))
+               collect (list base (and (> i 0) "--no-build") "--" "--treenode-filter"
+                             (format "/*/%s/%s/%s"
+                                     (or (weo/test-explorer-test-namespace test) "*")
+                                     (weo/test-explorer-test-class test)
+                                     (if (= (length members) (gethash key totals 0))
+                                         "*"
+                                       (mapconcat (lambda (m) (format "(%s)" (weo/test-explorer-test-name m)))
+                                                  members "|")))
+                             "--report-trx" "--results-directory" (funcall out (number-to-string i)))))))
 
 (defun weo/test-explorer--commands (tests dir)
-  "Shell commands running TESTS that write TRX files below DIR."
+  "Shell commands running TESTS that write TRX files below DIR.
+Projects that need Windows run with the Windows SDK, others with Linux's."
   (let ((totals (make-hash-table :test 'equal)))
     (dolist (test (hash-table-values weo/test-explorer--tests))
       (cl-incf (gethash (weo/test-explorer--class-key test) totals 0))
@@ -926,14 +952,20 @@ TRX files go below OUT."
     (cl-loop for (project . members) in (seq-group-by #'weo/test-explorer-test-project tests)
              for csproj = (weo/test-explorer-project-csproj project)
              for relative = (file-relative-name csproj weo/test-explorer--root)
-             for out = (expand-file-name (weo/test-explorer-project-name project) dir)
+             for windows = (weo/test-explorer--windows-p project)
+             for base = (expand-file-name (weo/test-explorer-project-name project) dir)
+             for out = (lambda (name)
+                         (let ((path (expand-file-name name base)))
+                           (if windows (weo/dotnet-windows-path path) path)))
              for all = (= (length members) (gethash csproj totals 0))
-             append (if (eq (weo/test-explorer-project-runner project) 'tunit)
-                        (weo/test-explorer--tunit-commands relative out members all totals)
-                      (list (weo/test-explorer--shell
-                             "dotnet" "test" relative
-                             (unless all (list "--filter" (weo/test-explorer--vstest-filter members totals)))
-                             "--logger" "trx" "--results-directory" out))))))
+             append (mapcar (lambda (args) (weo/dotnet-shell-command weo/test-explorer--root windows args))
+                            (if (eq (weo/test-explorer-project-runner project) 'tunit)
+                                (weo/test-explorer--tunit-args relative out members all totals)
+                              (list (list "test" relative
+                                          (unless all
+                                            (list "--filter"
+                                                  (weo/test-explorer--vstest-filter members totals)))
+                                          "--logger" "trx" "--results-directory" (funcall out "0"))))))))
 
 (defun weo/test-explorer--read-xml (file)
   "Parsed XML of FILE."
@@ -1000,9 +1032,19 @@ TRX files go below OUT."
     (user-error "Tests are already running; K cancels the run"))
   (unless tests
     (user-error "No tests to run"))
-  (let* ((dir (make-temp-file "test-explorer-" t))
+  (let* ((windows (seq-some #'weo/test-explorer--windows-p
+                            (seq-uniq (mapcar #'weo/test-explorer-test-project tests))))
+         (dir (if windows
+                  (let ((base (expand-file-name "TestResults/"
+                                                (weo/dotnet-windows-dir weo/test-explorer--root))))
+                    (make-directory base t)
+                    (make-temp-file (expand-file-name "test-explorer-" base) t))
+                (make-temp-file "test-explorer-" t)))
          (default-directory weo/test-explorer--root)
-         (command (string-join (weo/test-explorer--commands tests dir) "; "))
+         (sync (and windows (weo/dotnet-sync-command weo/test-explorer--root)))
+         (runs (string-join (weo/test-explorer--commands tests dir) "; "))
+         (command (if sync (format "%s && { %s; }" sync runs) runs))
+         (coding-system-for-read (if windows 'utf-8-dos coding-system-for-read))
          (buffer (let ((display-buffer-overriding-action '(display-buffer-no-window (allow-no-window . t))))
                    (compilation-start command nil (lambda (_) weo/test-explorer--output-buffer)))))
     (setq weo/test-explorer--run (list :tests tests :dir dir :start (float-time)
@@ -1013,8 +1055,10 @@ TRX files go below OUT."
     (dolist (test tests)
       (setf (weo/test-explorer-test-state test) 'running))
     (with-current-buffer buffer
+      (setq-local compilation-parse-errors-filename-function #'weo/dotnet-local-path)
       (add-hook 'compilation-finish-functions #'weo/test-explorer--finish nil t))
-    (weo/test-explorer--set-status (format "Running %d test%s…" (length tests) (if (cdr tests) "s" "")))))
+    (weo/test-explorer--set-status (format "Running %d test%s%s…" (length tests) (if (cdr tests) "s" "")
+                                           (if windows " on Windows" "")))))
 
 (defun weo/test-explorer--finish (_buffer message)
   "Read the results of the active run, which ended with MESSAGE."
@@ -1276,7 +1320,7 @@ The frame is wider when FILTERS is non-nil."
   (let ((frame (or (and (frame-live-p weo/test-explorer--frame) (frame-parent weo/test-explorer--frame))
                    (selected-frame))))
     (select-frame-set-input-focus frame)
-    (pop-to-buffer-same-window (find-file-noselect file))
+    (pop-to-buffer-same-window (find-file-noselect (weo/dotnet-local-path file)))
     (goto-char (point-min))
     (forward-line (1- line))
     (back-to-indentation)
@@ -1334,6 +1378,12 @@ The frame is wider when FILTERS is non-nil."
              (length (seq-uniq (mapcar #'weo/test-explorer-test-project (hash-table-values tests))))
              (- (float-time) start)))
     (message nil)))
+
+(defun weo/test-explorer-cycle-platform ()
+  "Cycle where tests run: auto (Windows when needed), windows, linux."
+  (interactive)
+  (weo/dotnet-cycle-platform)
+  (weo/test-explorer--refresh))
 
 (defun weo/test-explorer-hide ()
   "Hide the explorer and return to its parent frame."
@@ -1679,6 +1729,7 @@ The frame is wider when FILTERS is non-nil."
   "?" #'weo/test-explorer-help
   "h" #'weo/test-explorer-help
   "q" #'weo/test-explorer-hide
+  "w" #'weo/test-explorer-cycle-platform
   "Q" #'weo/test-explorer-quit)
 
 (define-derived-mode weo/test-explorer-mode special-mode "Test Explorer"

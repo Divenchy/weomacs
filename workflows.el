@@ -36,13 +36,24 @@
   (setq projectile-switch-project-action #'projectile-dired))
 
 (global-set-key (kbd "C-S-s") 'consult-ripgrep)
-
+(global-set-key (kbd "M-j") 'projectile-find-file)
+(global-set-key (kbd "C-c d") 'projectile-dired)
 ;; Workspaces ;;
 
 ;; One tab-bar tab per project: tabs isolate window layouts natively, and LSP, claude-code-ide and
 ;; ghostel are already scoped by project root, so M-q only needs to narrow buffers to the project.
+(defun weo/workspace-tab-name ()
+  "Name a tab after the project of its selected buffer, else the buffer itself."
+  (let ((buffer (window-buffer (or (minibuffer-selected-window)
+                                   (and (window-minibuffer-p) (get-mru-window))))))
+    (or (with-current-buffer buffer
+          (when-let* ((project (project-current)))
+            (project-name project)))
+        (buffer-name buffer))))
+
 (use-package tab-bar
   :custom
+  (tab-bar-tab-name-function #'weo/workspace-tab-name)
   (tab-bar-show 1)                      ; hide the bar while there is a single tab
   (tab-bar-close-button-show nil)
   (tab-bar-new-button-show nil)
