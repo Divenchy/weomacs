@@ -5,9 +5,10 @@
 ;; search, a FILTERS panel that opens to the left, group-by presets, multi-select runs, and
 ;; VS-compatible .playlist files.
 ;;
-;; Discovery parses C# with tree-sitter, so no build is needed.  Attribute classes defined in the
-;; solution are resolved, so `[ModelT]' (a CategoryAttribute subclass) and
-;; `[TestCategory(ConnectionType.Ble)]' become the traits Category=ModelT and ConnectionType=Ble.
+;; Discovery parses C# with tree-sitter, so no build is needed.  Attribute classes, string constants
+;; and enums defined in the solution are resolved, so `[ModelT]' (a CategoryAttribute subclass) and
+;; `[TestCaseSource(nameof(Cases), [ConnectionType.Ble])]' become the traits Category=ModelT and
+;; ConnectionType=Ble.  The FILTERS panel lists these traits and the test projects.
 ;; Runs go through `dotnet test --filter' (NUnit, xUnit, MSTest) or `dotnet run -- --treenode-filter'
 ;; (TUnit) and results come back from TRX files.
 ;;
@@ -60,19 +61,21 @@
   :type 'string)
 
 (defcustom weo/test-explorer-test-attributes
-  '("Test" "TestCase" "TestCaseSource" "Theory" "Fact" "TestMethod" "DataTestMethod")
+  '("Test" "TestCase" "TestCaseSource" "Theory" "Fact" "TestMethod" "DataTestMethod"
+    "Combinatorial" "Pairwise" "Sequential" "CombiningStrategy")
   "Attributes marking a test method, without the `Attribute' suffix.
 Subclasses defined in the solution are recognized as well."
   :type '(repeat string))
 
-(defcustom weo/test-explorer-category-attributes '("Category" "TestCategory")
+(defcustom weo/test-explorer-category-attributes '("Category" "TestCategory" "TestCategoryBase")
   "Attributes whose arguments are test categories.
 Subclasses defined in the solution are recognized as well.  A subclass used
 without arguments contributes its own name, as NUnit does."
   :type '(repeat string))
 
-(defcustom weo/test-explorer-trait-attributes '("Trait" "Property" "TestProperty")
-  "Attributes taking a NAME, VALUE trait pair."
+(defcustom weo/test-explorer-trait-attributes '("Trait" "Property" "TestProperty" "Owner" "Priority")
+  "Attributes taking a NAME, VALUE trait pair.
+Given only a VALUE, the trait is named after the attribute."
   :type '(repeat string))
 
 (defcustom weo/test-explorer-ignored-directories
@@ -218,19 +221,29 @@ without arguments contributes its own name, as NUnit does."
                   projects)))))
     (sort projects :key (lambda (p) (length (weo/test-explorer-project-dir p))) :reverse t)))
 
-(defun weo/test-explorer--scan-attribute-classes (bases)
-  "Record attribute classes of the current buffer in BASES.
-Maps a short name to (BASE . LITERAL), LITERAL being a string passed
-to `base(...)'."
+(defun weo/test-explorer--scan-symbols (bases consts enums)
+  "Record attribute classes, string constants and enums of the current buffer.
+BASES maps an attribute's short name to (BASE . ARG), ARG being the text of
+the first argument passed to the base constructor.  CONSTS maps a constant
+to its value and ENUMS holds enum names."
+  (goto-char (point-min))
+  (while (re-search-forward "\\_<enum[ \t\n]+\\([[:alnum:]_]+\\)" nil t)
+    (puthash (match-string 1) t enums))
   (goto-char (point-min))
   (while (re-search-forward
-          "\\_<class[ \t\n]+\\([[:alnum:]_]+\\)Attribute[ \t\n]*:[ \t\n]*\\([[:alnum:]_.]+\\)" nil t)
+          "\\_<const[ \t\n]+string[ \t\n]+\\([[:alnum:]_]+\\)[ \t\n]*=[ \t\n]*@?\"\\([^\"]*\\)\"" nil t)
+    (puthash (match-string 1) (match-string 2) consts))
+  (goto-char (point-min))
+  (while (re-search-forward
+          (concat "\\_<class[ \t\n]+\\([[:alnum:]_]+\\)Attribute[ \t\n]*\\(?:([^)]*)[ \t\n]*\\)?"
+                  ":[ \t\n]*\\([[:alnum:]_.]+\\)")
+          nil t)
     (let* ((name (match-string 1))
            (base (weo/test-explorer--short-name (match-string 2)))
            (limit (save-excursion (if (re-search-forward "\\_<class[ \t\n]" nil t) (point) (point-max)))))
-      (puthash name (cons base (and (re-search-forward
-                                     ":[ \t\n]*base[ \t\n]*([ \t\n]*\"\\([^\"]*\\)\"[ \t\n]*)" limit t)
-                                    (match-string 1)))
+      (puthash name (cons base (and (re-search-forward "\\=[ \t\n]*(\\|:[ \t\n]*base[ \t\n]*(" limit t)
+                                    (looking-at "[ \t\n]*\\(\"[^\"]*\"\\|nameof([^)]*)\\|[^,)]+\\)")
+                                    (string-trim (match-string 1))))
                bases))))
 
 (defun weo/test-explorer--children (node type)
@@ -243,18 +256,16 @@ to `base(...)'."
     (treesit-node-text child t)))
 
 (defun weo/test-explorer--attributes (node)
-  "Attributes of NODE as (NAME . ARGS), ARGS being positional argument texts."
+  "Attributes of NODE as (NAME . ARGS), ARGS being argument texts."
   (cl-loop for list in (weo/test-explorer--children node "attribute_list")
            append (cl-loop for attr in (weo/test-explorer--children list "attribute")
                            collect (cons (weo/test-explorer--short-name
                                           (weo/test-explorer--field attr "name"))
-                                         (cl-loop for arg in (weo/test-explorer--children
-                                                              (car (weo/test-explorer--children
-                                                                    attr "attribute_argument_list"))
-                                                              "attribute_argument")
-                                                  for text = (treesit-node-text arg t)
-                                                  unless (string-match-p "\\`[[:alnum:]_]+[ \t]*[:=]" text)
-                                                  collect text)))))
+                                         (mapcar (lambda (arg) (treesit-node-text arg t))
+                                                 (weo/test-explorer--children
+                                                  (car (weo/test-explorer--children
+                                                        attr "attribute_argument_list"))
+                                                  "attribute_argument"))))))
 
 (defun weo/test-explorer--parse-buffer (file project)
   "Class records of the current buffer, which holds FILE of PROJECT."
@@ -285,13 +296,20 @@ to `base(...)'."
                               :attrs (weo/test-explorer--attributes child)
                               :methods (cl-loop for m in (weo/test-explorer--children
                                                           body "method_declaration")
+                                                for params = (weo/test-explorer--children
+                                                              (treesit-node-child-by-field-name
+                                                               m "parameters")
+                                                              "parameter")
                                                 collect (list :name (weo/test-explorer--field m "name")
                                                               :file file
                                                               :line (line-number-at-pos
                                                                      (treesit-node-start
                                                                       (treesit-node-child-by-field-name
                                                                        m "name")))
-                                                              :attrs (weo/test-explorer--attributes m))))
+                                                              :attrs (append
+                                                                      (weo/test-explorer--attributes m)
+                                                                      (mapcan #'weo/test-explorer--attributes
+                                                                              params)))))
                         classes)
                   (when body (walk body ns class))))))))
       (walk (treesit-parser-root-node (treesit-parser-create 'c-sharp)) nil nil))
@@ -303,34 +321,58 @@ to `base(...)'."
            when (member name roots) return t
            while (setq name (car (gethash name bases)))))
 
-(defun weo/test-explorer--literal (text)
-  "Value of the attribute argument TEXT."
-  (cond ((string-match "\\`@?\"\\(.*\\)\"\\'" text) (match-string 1 text))
-        ((string-match "\\([[:alnum:]_]+\\)\\'" text) (match-string 1 text))
-        (t text)))
+(defun weo/test-explorer--literal (text consts)
+  "Value of the attribute argument TEXT, or nil if it is not a constant.
+Names resolve through CONSTS, else to themselves."
+  (cond ((string-match "\\`@?\"\\([^\"]*\\)\"\\'" text) (match-string 1 text))
+        ((string-match "\\`nameof([^)]*?\\([[:alnum:]_]+\\))\\'" text) (match-string 1 text))
+        ((string-match "\\`\\(?:[[:alnum:]_]+\\.\\)*\\([[:alnum:]_]+\\)\\'" text)
+         (gethash (match-string 1 text) consts (match-string 1 text)))))
 
-(defun weo/test-explorer--attribute-traits (attr bases)
-  "Traits contributed by ATTR, a (NAME . ARGS) pair, as (KEY . VALUE) conses."
-  (pcase-let ((`(,name . ,args) attr))
-    (cond
-     ((member name weo/test-explorer-trait-attributes)
-      (when (cdr args)
-        (list (cons (weo/test-explorer--literal (car args)) (weo/test-explorer--literal (cadr args))))))
-     ((weo/test-explorer--derives-p name weo/test-explorer-category-attributes bases)
-      (if args
-          (mapcar (lambda (arg)
-                    (if (string-match "\\([[:alnum:]_]+\\)\\.\\([[:alnum:]_]+\\)\\'" arg)
-                        (cons (match-string 1 arg) (match-string 2 arg))
-                      (cons "Category" (weo/test-explorer--literal arg))))
-                  args)
-        (list (cons "Category" (or (cdr (gethash name bases)) name))))))))
+(defun weo/test-explorer--enum-refs (text enums)
+  "(ENUM . MEMBER) pairs for members of ENUMS referenced in TEXT."
+  (let ((start 0) refs)
+    (while (string-match "\\([[:alnum:]_]+\\)\\.\\([[:alnum:]_]+\\)" text start)
+      (when (gethash (match-string 1 text) enums)
+        (push (cons (match-string 1 text) (match-string 2 text)) refs))
+      (setq start (match-beginning 2)))
+    (nreverse refs)))
 
-(defun weo/test-explorer--build (classes bases)
-  "Tests of CLASSES keyed by id, including inherited test methods."
+(defun weo/test-explorer--attribute-traits (attr bases consts enums)
+  "Traits contributed by ATTR, a (NAME . ARGS) pair, as (KEY . VALUE) conses.
+BASES, CONSTS and ENUMS are filled by `weo/test-explorer--scan-symbols'."
+  (pcase-let* ((`(,name . ,args) attr)
+               (value (lambda (arg) (weo/test-explorer--literal arg consts)))
+               (positional (seq-remove (lambda (arg) (string-match-p "\\`[[:alnum:]_]+[ \t]*[:=]" arg))
+                                       args)))
+    (append
+     (mapcan (lambda (arg) (weo/test-explorer--enum-refs arg enums)) args)
+     (cl-loop for arg in args
+              when (string-match "\\`Category[ \t]*=[ \t]*\\(.+\\)" arg)
+              append (mapcar (lambda (c) (cons "Category" (string-trim c)))
+                             (split-string (or (funcall value (match-string 1 arg)) "") "," t)))
+     (cond
+      ((member name weo/test-explorer-trait-attributes)
+       (pcase (mapcar value positional)
+         (`(,v) (and v (list (cons name v))))
+         (`(,k ,v . ,_) (and k v (list (cons k v))))))
+      ((weo/test-explorer--derives-p name weo/test-explorer-category-attributes bases)
+       (if positional
+           (cl-loop for arg in positional
+                    for v = (funcall value arg)
+                    when (and v (not (weo/test-explorer--enum-refs arg enums)))
+                    collect (cons "Category" v))
+         (list (cons "Category" (or (when-let* ((arg (cdr (gethash name bases)))) (funcall value arg))
+                                    name)))))))))
+
+(defun weo/test-explorer--build (classes bases consts enums)
+  "Tests of CLASSES keyed by id, including inherited test methods.
+BASES, CONSTS and ENUMS are filled by `weo/test-explorer--scan-symbols'."
   (let ((by-name (make-hash-table :test 'equal))
         (tests (make-hash-table :test 'equal))
         (traits-of (lambda (attrs)
-                     (mapcan (lambda (a) (weo/test-explorer--attribute-traits a bases)) attrs))))
+                     (mapcan (lambda (a) (weo/test-explorer--attribute-traits a bases consts enums))
+                             attrs))))
     (dolist (class classes)
       (puthash (plist-get class :name) class by-name))
     (dolist (class classes)
@@ -366,18 +408,19 @@ to `base(...)'."
                    (not (member (file-name-nondirectory dir) weo/test-explorer-ignored-directories)))))
          (projects (weo/test-explorer--projects files))
          (bases (make-hash-table :test 'equal))
+         (consts (make-hash-table :test 'equal))
+         (enums (make-hash-table :test 'equal))
          classes)
     (dolist (file files)
       (when (string-suffix-p ".cs" file)
         (let ((project (seq-find (lambda (p) (string-prefix-p (weo/test-explorer-project-dir p) file))
                                  projects)))
-          (when (or project (string-match-p "Attribute" (file-name-nondirectory file)))
-            (with-temp-buffer
-              (insert-file-contents file)
-              (weo/test-explorer--scan-attribute-classes bases)
-              (when project
-                (setq classes (nconc (weo/test-explorer--parse-buffer file project) classes))))))))
-    (weo/test-explorer--build classes bases)))
+          (with-temp-buffer
+            (insert-file-contents file)
+            (weo/test-explorer--scan-symbols bases consts enums)
+            (when project
+              (setq classes (nconc (weo/test-explorer--parse-buffer file project) classes)))))))
+    (weo/test-explorer--build classes bases consts enums)))
 
 ;;;; Search and filters
 
@@ -389,9 +432,7 @@ to `base(...)'."
   "Filterable (SECTION . VALUE) pairs of TEST."
   (append (weo/test-explorer-test-traits test)
           (list (cons "State" (weo/test-explorer--state-name (weo/test-explorer-test-state test)))
-                (cons "Project" (weo/test-explorer-project-name (weo/test-explorer-test-project test)))
-                (cons "Namespace" (or (weo/test-explorer-test-namespace test) "<global>"))
-                (cons "Class" (weo/test-explorer-test-class test)))))
+                (cons "Project" (weo/test-explorer-project-name (weo/test-explorer-test-project test))))))
 
 (defun weo/test-explorer--scope ()
   "Tests of the open playlist, else all tests."
@@ -667,7 +708,7 @@ Sections combine with AND; values within a section with OR, or AND when
      (weo/test-explorer--button (weo/test-explorer--icon 'filter)
                                 (if (> filters 0) (format "FILTERS %d" filters) "FILTERS")
                                 #'weo/test-explorer-filters
-                                "Filter by trait, state, project, namespace or class (f)"
+                                "Filter by trait or project (f)"
                                 (or (> filters 0) (weo/test-explorer--filters-window)))
      " "
      (weo/test-explorer--button (weo/test-explorer--icon 'sort) nil
@@ -716,28 +757,25 @@ Sections combine with AND; values within a section with OR, or AND when
               (format "  · %s only" weo/dotnet-platform)))))
 
 (defun weo/test-explorer--sections ()
-  "Filter sections over the current scope: ((SECTION (VALUE . COUNT) ...) ...)."
-  (let ((table (make-hash-table :test 'equal))
-        (fixed '("State" "Project" "Namespace" "Class")))
+  "Filter sections over the current scope: ((SECTION (VALUE . COUNT) ...) ...).
+Trait sections come first, then Project; State is left to the toolbar."
+  (let ((table (make-hash-table :test 'equal)))
     (dolist (test (weo/test-explorer--scope))
       (dolist (facet (delete-dups (weo/test-explorer--facets test)))
         (cl-incf (alist-get (cdr facet) (gethash (car facet) table) 0 nil #'equal))))
-    (cl-loop for section in (append (sort (seq-difference (hash-table-keys table) fixed)
+    (cl-loop for section in (append (sort (seq-difference (hash-table-keys table) '("State" "Project"))
                                           :lessp (lambda (a b)
                                                    (cond ((equal a "Category") t)
                                                          ((equal b "Category") nil)
                                                          (t (string< a b)))))
-                                    fixed)
+                                    '("Project"))
              when (gethash section table)
              collect (cons section (sort (gethash section table)
                                          :key #'car :lessp (weo/test-explorer--labels-lessp section))))))
 
 (defun weo/test-explorer--section-open-p (section)
   "Non-nil if filter SECTION is expanded."
-  (pcase (gethash section weo/test-explorer--folds)
-    ('open t)
-    ('closed nil)
-    (_ (not (member section '("Namespace" "Class"))))))
+  (not (eq (gethash section weo/test-explorer--folds) 'closed)))
 
 (defun weo/test-explorer--filter-props (item help)
   "Text properties of a FILTERS row for ITEM with tooltip HELP."
