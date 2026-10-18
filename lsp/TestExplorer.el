@@ -9,8 +9,10 @@
 ;; and enums defined in the solution are resolved, so `[ModelT]' (a CategoryAttribute subclass) and
 ;; `[TestCaseSource(nameof(Cases), [ConnectionType.Ble])]' become the traits Category=ModelT and
 ;; ConnectionType=Ble.  The FILTERS panel lists these traits and the test projects.
-;; Runs go through `dotnet test --filter' (NUnit, xUnit, MSTest) or `dotnet run -- --treenode-filter'
-;; (TUnit) and results come back from TRX files.
+;; Traits the built assemblies report at runtime are merged in as Visual Studio does, so categories
+;; added in code show up after a build.  Runs go through `dotnet test --filter' (NUnit, xUnit, MSTest)
+;; or `dotnet run -- --treenode-filter' (TUnit); results come back from TRX files, and each run's
+;; output and artifacts are kept under `weo/test-explorer-results-directory'.
 ;;
 ;; Entry point: `weo/test-explorer'.  Press `?' in the explorer for keys.
 
@@ -59,6 +61,10 @@
 (defcustom weo/test-explorer-playlist-directory ".vs/playlists"
   "Directory for saved playlists, relative to the solution root."
   :type 'string)
+
+(defcustom weo/test-explorer-results-directory "~/emacs/tests"
+  "Directory keeping each run's output log and artifacts, one folder per run."
+  :type 'directory)
 
 (defcustom weo/test-explorer-test-attributes
   '("Test" "TestCase" "TestCaseSource" "Theory" "Fact" "TestMethod" "DataTestMethod"
@@ -181,7 +187,7 @@ Given only a VALUE, the trait is named after the attribute."
 (defvar weo/test-explorer--grouping '(project namespace class) "Group-by keys, outermost first.")
 (defvar weo/test-explorer--playlist nil "Open playlist as (FILE . IDS), or nil.")
 (defvar weo/test-explorer--visible nil "Tests currently listed.")
-(defvar weo/test-explorer--last-run nil "Ids of the last run.")
+(defvar weo/test-explorer--last-run nil "The last run as (NAME . IDS); NAME is its playlist, or nil.")
 (defvar weo/test-explorer--run nil "Plist describing the active run, or nil.")
 (defvar weo/test-explorer--status "" "Status line text.")
 (defvar weo/test-explorer--frame nil "The explorer child frame.")
@@ -1064,32 +1070,52 @@ Projects that need Windows run with the Windows SDK, others with Linux's."
                                                     ((memq 'passed states) 'passed)
                                                     (t 'skipped)))))
 
-(defun weo/test-explorer--start (tests)
-  "Run TESTS."
+(defun weo/test-explorer--run-name (tests &optional name)
+  "Folder name for a run of TESTS: NAME or what ran, then a timestamp."
+  (concat (replace-regexp-in-string
+           "[^[:alnum:]._+-]" "_"
+           (cond (name)
+                 ((null (cdr tests))
+                  (concat (weo/test-explorer-test-class (car tests)) "."
+                          (weo/test-explorer-test-name (car tests))))
+                 ((= (length tests) (hash-table-count weo/test-explorer--tests)) "All")
+                 ((null (cdr (seq-uniq (mapcar #'weo/test-explorer--class-key tests))))
+                  (weo/test-explorer-test-class (car tests)))
+                 (t (format "%d-tests" (length tests)))))
+          (format-time-string "_%Y-%m-%d_%H-%M-%S")))
+
+(defun weo/test-explorer--start (tests &optional name)
+  "Run TESTS; their results folder is named NAME, else after the tests."
   (when weo/test-explorer--run
     (user-error "Tests are already running; K cancels the run"))
   (unless tests
     (user-error "No tests to run"))
   (let* ((windows (seq-some #'weo/test-explorer--windows-p
                             (seq-uniq (mapcar #'weo/test-explorer-test-project tests))))
+         (archive (file-name-as-directory
+                   (expand-file-name (weo/test-explorer--run-name tests name)
+                                     weo/test-explorer-results-directory)))
+         ;; Windows runs write below the mirror, then get copied to ARCHIVE.
          (dir (if windows
                   (let ((base (expand-file-name "TestResults/"
                                                 (weo/dotnet-windows-dir weo/test-explorer--root))))
                     (make-directory base t)
                     (make-temp-file (expand-file-name "test-explorer-" base) t))
-                (make-temp-file "test-explorer-" t)))
+                archive))
          (default-directory weo/test-explorer--root)
          (sync (and windows (weo/dotnet-sync-command weo/test-explorer--root)))
          (runs (string-join (weo/test-explorer--commands tests dir) "; "))
          (command (if sync (format "%s && { %s; }" sync runs) runs))
          (coding-system-for-read (if windows 'utf-8-dos coding-system-for-read))
+         ;; Under a pty, dotnet test's result summary never reaches the buffer.
+         (process-connection-type nil)
          (buffer (let ((display-buffer-overriding-action '(display-buffer-no-window (allow-no-window . t))))
                    (compilation-start command nil (lambda (_) weo/test-explorer--output-buffer)))))
-    (setq weo/test-explorer--run (list :tests tests :dir dir :start (float-time)
+    (setq weo/test-explorer--run (list :tests tests :dir dir :archive archive :start (float-time)
                                        :previous (mapcar (lambda (test)
                                                            (cons test (weo/test-explorer-test-state test)))
                                                          tests))
-          weo/test-explorer--last-run (mapcar #'weo/test-explorer-test-id tests))
+          weo/test-explorer--last-run (cons name (mapcar #'weo/test-explorer-test-id tests)))
     (dolist (test tests)
       (setf (weo/test-explorer-test-state test) 'running))
     (with-current-buffer buffer
@@ -1098,11 +1124,13 @@ Projects that need Windows run with the Windows SDK, others with Linux's."
     (weo/test-explorer--set-status (format "Running %d test%s%s…" (length tests) (if (cdr tests) "s" "")
                                            (if windows " on Windows" "")))))
 
-(defun weo/test-explorer--finish (_buffer message)
-  "Read the results of the active run, which ended with MESSAGE."
+(defun weo/test-explorer--finish (buffer message)
+  "Read the results of the active run, which ended with MESSAGE.
+The output in BUFFER and the run's artifacts are kept in its archive folder."
   (when-let* ((run weo/test-explorer--run))
     (setq weo/test-explorer--run nil)
     (let* ((dir (plist-get run :dir))
+           (archive (plist-get run :archive))
            (projects (seq-uniq (mapcar #'weo/test-explorer-test-project (plist-get run :tests))))
            (cases (make-hash-table :test 'equal)))
       (dolist (trx (directory-files-recursively dir "\\.trx\\'"))
@@ -1120,7 +1148,14 @@ Projects that need Windows run with the Windows SDK, others with Linux's."
       (pcase-dolist (`(,test . ,state) (plist-get run :previous))
         (when (eq (weo/test-explorer-test-state test) 'running)
           (setf (weo/test-explorer-test-state test) state)))
-      (delete-directory dir t)
+      (make-directory archive t)
+      (unless (equal dir archive)
+        (copy-directory dir archive nil t t)
+        (delete-directory dir t))
+      (with-current-buffer buffer
+        (let ((coding-system-for-write 'utf-8-unix))
+          (write-region nil nil (expand-file-name "output.log" archive) nil 'silent)))
+      (weo/test-explorer--discover-runtime projects)
       (let* ((tests (delq nil (mapcar (lambda (id) (gethash id weo/test-explorer--tests))
                                       (hash-table-keys cases))))
              (count (lambda (state)
@@ -1133,8 +1168,142 @@ Projects that need Windows run with the Windows SDK, others with Linux's."
                                       (* 1000 (- (float-time) (plist-get run :start))))))
                       ((string-match-p "\\`\\(?:interrupt\\|killed\\)" message) "Test run canceled.")
                       (t "Test run failed before any test ran; o shows the output."))))
-        (message "%s" status)
+        (message "%s  Results: %s" status (abbreviate-file-name archive))
         (weo/test-explorer--set-status status)))))
+
+;;;; Runtime discovery
+;; Visual Studio reads traits from the built assemblies: vstest.console in design mode loads each one
+;; through its test adapter, which runs the framework's own test builders.  Categories added in code,
+;; such as by an NUnit `ITestBuilder', only exist there.  Messages are JSON strings prefixed by their
+;; UTF-8 length as a 7-bit encoded integer (.NET `BinaryWriter.Write(string)').
+
+(defvar weo/test-explorer--discoveries nil "Server processes of the active runtime discoveries.")
+
+(defun weo/test-explorer--assembly (project windows)
+  "Newest built test assembly of PROJECT, in its Windows mirror when WINDOWS."
+  (let* ((dir (weo/test-explorer-project-dir project))
+         (bin (expand-file-name "bin" (if windows (weo/dotnet-windows-dir dir) dir))))
+    (when (file-directory-p bin)
+      ;; shortcut: assumes AssemblyName is the project name; read it from the csproj if that bites.
+      (car (sort (directory-files-recursively
+                  bin (concat "\\`" (regexp-quote (weo/test-explorer-project-name project)) "\\.dll\\'"))
+                 :key (lambda (file) (file-attribute-modification-time (file-attributes file)))
+                 :lessp #'time-less-p :reverse t)))))
+
+(defun weo/test-explorer--vstest-encode (message)
+  "MESSAGE, a plist, framed for vstest.console."
+  (let* ((json (json-serialize message))
+         (data (if (multibyte-string-p json) (encode-coding-string json 'utf-8) json))
+         (n (length data))
+         prefix)
+    (while (>= n #x80)
+      (push (logior #x80 (logand n #x7f)) prefix)
+      (setq n (ash n -7)))
+    (concat (apply #'unibyte-string (nreverse (cons n prefix))) data)))
+
+(defun weo/test-explorer--vstest-decode (data)
+  "Complete vstest messages at the start of DATA, as (MESSAGES . REST)."
+  (let ((pos 0) messages)
+    (catch 'partial
+      (while t
+        (let ((n 0) (shift 0) (i pos) byte)
+          (while (progn (when (>= i (length data)) (throw 'partial nil))
+                        (setq byte (aref data i)
+                              i (1+ i)
+                              n (logior n (ash (logand byte #x7f) shift))
+                              shift (+ shift 7))
+                        (>= byte #x80)))
+          (when (> (+ i n) (length data)) (throw 'partial nil))
+          (push (json-parse-string (decode-coding-string (substring data i (+ i n)) 'utf-8)
+                                   :object-type 'plist :array-type 'list :null-object nil :false-object nil)
+                messages)
+          (setq pos (+ i n)))))
+    (cons (nreverse messages) (substring data pos))))
+
+(defun weo/test-explorer--merge-test-case (test-case)
+  "Add the categories and traits of the discovered vstest TEST-CASE to its test."
+  (let ((id (plist-get test-case :FullyQualifiedName)))
+    (while (string-match "([^()]*)" id)
+      (setq id (replace-match "" t t id)))
+    (when-let* ((test (gethash id weo/test-explorer--tests)))
+      (dolist (property (plist-get test-case :Properties))
+        (let ((key (plist-get property :Key))
+              (value (plist-get property :Value)))
+          (cond ((equal (plist-get key :Label) "TestCategory")
+                 (dolist (category value)
+                   (push (cons "Category" category) (weo/test-explorer-test-traits test))))
+                ((equal (plist-get key :Id) "TestObject.Traits")
+                 (dolist (trait value)
+                   (push (cons (plist-get trait :Key) (plist-get trait :Value))
+                         (weo/test-explorer-test-traits test)))))))
+      (setf (weo/test-explorer-test-traits test) (delete-dups (weo/test-explorer-test-traits test))))))
+
+(defun weo/test-explorer--vstest-discover (sources windows)
+  "Discover the tests of the assemblies SOURCES with vstest.console in design mode.
+Runs with the Windows SDK when WINDOWS."
+  (let* ((pending "")
+         done errors connection vstest server
+         (send (lambda (type &optional payload)
+                 (process-send-string connection
+                                      (weo/test-explorer--vstest-encode
+                                       (append (list :MessageType type)
+                                               (and payload (list :Version 7 :Payload payload)))))))
+         (finish (lambda ()
+                   (unless done
+                     (setq done t
+                           weo/test-explorer--discoveries (delq server weo/test-explorer--discoveries))
+                     (delete-process server)
+                     (when connection (delete-process connection))
+                     (if errors
+                         (message "Test Explorer runtime discovery: %s"
+                                  (car (split-string (car (last errors)) "\n")))
+                       (weo/test-explorer--refresh))))))
+    (setq server
+          (make-network-process
+           :name "test-explorer-vstest" :server t :host "127.0.0.1" :service t :family 'ipv4
+           :coding 'binary :noquery t
+           :filter (lambda (proc data)
+                     (setq connection proc)
+                     (pcase-let ((`(,messages . ,rest)
+                                  (weo/test-explorer--vstest-decode (concat pending data))))
+                       (setq pending rest)
+                       (dolist (msg messages)
+                         (let ((payload (plist-get msg :Payload)))
+                           (pcase (plist-get msg :MessageType)
+                             ("TestSession.Connected" (funcall send "ProtocolVersion" 7))
+                             ("ProtocolVersion"
+                              (funcall send "TestDiscovery.Start"
+                                       (list :Sources (vconcat sources) :RunSettings "<RunSettings/>")))
+                             ("TestDiscovery.TestFound" (mapc #'weo/test-explorer--merge-test-case payload))
+                             ("TestDiscovery.Completed"
+                              (mapc #'weo/test-explorer--merge-test-case
+                                    (plist-get payload :LastDiscoveredTests))
+                              (funcall send "TestSession.Terminate")
+                              (funcall finish))
+                             ("TestSession.Message"
+                              (when (eql (plist-get payload :MessageLevel) 2)
+                                (push (plist-get payload :Message) errors))))))))))
+    (push server weo/test-explorer--discoveries)
+    (setq vstest (let ((default-directory weo/test-explorer--root))
+                   (start-process-shell-command
+                    "test-explorer-vstest" (get-buffer-create " *Test Explorer vstest*")
+                    (weo/dotnet-shell-command weo/test-explorer--root windows "vstest"
+                                              (format "/port:%d" (process-contact server :service))))))
+    (set-process-query-on-exit-flag vstest nil)
+    (set-process-sentinel vstest (lambda (_proc _event)
+                                   (unless (or done (process-live-p vstest))
+                                     (push "vstest.console exited before discovery completed" errors)
+                                     (funcall finish))))))
+
+(defun weo/test-explorer--discover-runtime (projects)
+  "Add the traits that the built assemblies of PROJECTS report at runtime."
+  (pcase-dolist (`(,windows . ,group)
+                 (seq-group-by #'weo/test-explorer--windows-p
+                               (seq-filter (lambda (p) (eq (weo/test-explorer-project-runner p) 'vstest))
+                                           projects)))
+    (when-let* ((sources (delq nil (mapcar (lambda (p) (weo/test-explorer--assembly p windows)) group))))
+      (weo/test-explorer--vstest-discover (mapcar (if windows #'weo/dotnet-windows-path #'identity) sources)
+                                          windows))))
 
 ;;;; Playlists
 
@@ -1225,7 +1394,8 @@ Projects that need Windows run with the Windows SDK, others with Linux's."
   "Run the tests of the playlist FILE."
   (interactive (list (weo/test-explorer--read-playlist-file "Run playlist: ")))
   (weo/test-explorer--start (delq nil (mapcar (lambda (id) (gethash id weo/test-explorer--tests))
-                                              (weo/test-explorer--read-playlist file)))))
+                                              (weo/test-explorer--read-playlist file)))
+                            (file-name-base file)))
 
 (defun weo/test-explorer-playlist-delete (file)
   "Delete the playlist FILE."
@@ -1410,6 +1580,8 @@ The frame is wider when FILTERS is non-nil."
                        (weo/test-explorer-test-results test) (weo/test-explorer-test-results prev))))
              tests)
     (setq weo/test-explorer--tests tests)
+    (weo/test-explorer--discover-runtime
+     (seq-uniq (mapcar #'weo/test-explorer-test-project (hash-table-values tests))))
     (weo/test-explorer--set-status
      (format "Discovered %d tests in %d projects (%.1f s)"
              (hash-table-count tests)
@@ -1537,9 +1709,12 @@ The frame is wider when FILTERS is non-nil."
   (weo/test-explorer--start (weo/test-explorer--selection)))
 
 (defun weo/test-explorer-run-all ()
-  "Run every test in view."
+  "Run every test in view.
+With a playlist open and no search or filter, the run is named after it."
   (interactive)
-  (weo/test-explorer--start weo/test-explorer--visible))
+  (weo/test-explorer--start weo/test-explorer--visible
+                            (and weo/test-explorer--playlist (not (weo/test-explorer--searching-p))
+                                 (file-name-base (car weo/test-explorer--playlist)))))
 
 (defun weo/test-explorer-run-failed ()
   "Run the failed tests."
@@ -1551,7 +1726,8 @@ The frame is wider when FILTERS is non-nil."
   "Repeat the last run."
   (interactive)
   (weo/test-explorer--start (delq nil (mapcar (lambda (id) (gethash id weo/test-explorer--tests))
-                                              weo/test-explorer--last-run))))
+                                              (cdr weo/test-explorer--last-run)))
+                            (car weo/test-explorer--last-run)))
 
 (defun weo/test-explorer-stop ()
   "Cancel the active run."
