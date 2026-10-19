@@ -326,22 +326,50 @@ Each result is a plist with :kind (`modified', `renamed', `created' or
 
 ;;;; Engine: Apply and Undo
 
+(defun weo/refactor--common-length (a b)
+  "Length of the common prefix of strings A and B."
+  (let ((cmp (compare-strings a nil nil b nil nil)))
+    (if (eq cmp t) (length a) (1- (abs cmp)))))
+
 (defun weo/refactor--replace-contents (text)
   "Make the current buffer's text TEXT, changing only what differs.
-Change hooks see one whole-buffer change, which keeps language servers in sync."
+Change hooks see the one span between the first and last difference, so a
+language server receives that span instead of the whole buffer."
   (save-restriction
     (widen)
-    (let ((beg (point-min))
-          (end (point-max))
-          (inhibit-modification-hooks t))
-      (run-hook-with-args 'before-change-functions beg end)
-      (replace-region-contents beg end text 1.0)
-      (run-hook-with-args 'after-change-functions beg (+ beg (length text)) (- end beg)))))
+    (let* ((old (buffer-substring-no-properties (point-min) (point-max)))
+           (prefix (weo/refactor--common-length old text))
+           (suffix (min (weo/refactor--common-length (reverse old) (reverse text))
+                        (- (min (length old) (length text)) prefix))))
+      (unless (and (= prefix (length old)) (= prefix (length text)))
+        (replace-region-contents (+ (point-min) prefix) (- (point-max) suffix)
+                                 (substring text prefix (- (length text) suffix)) 1.0)))))
+
+(defun weo/refactor--save-raw ()
+  "Save the current buffer quietly as it is.
+Before-save hooks (format on save, willSave edits) and final-newline insertion
+are skipped, so the file holds exactly the refactored text and undo restores
+it byte for byte."
+  (let ((save-silently t)
+        (before-save-hook nil)
+        (require-final-newline nil))
+    (save-buffer)))
 
 (defun weo/refactor--save ()
-  "Save the current buffer quietly when `weo/refactor-save' is set."
+  "Save the current buffer when `weo/refactor-save' is set."
   (when (and weo/refactor-save buffer-file-name)
-    (let ((save-silently t)) (save-buffer))))
+    (weo/refactor--save-raw)))
+
+(defun weo/refactor--write-text (file old new)
+  "Replace the text OLD of the unvisited FILE with NEW, keeping its coding system.
+Signal an error when FILE no longer holds OLD."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let ((coding last-coding-system-used))
+      (unless (string= (buffer-string) old)
+        (error "%s changed on disk during the refactoring" file))
+      (let ((coding-system-for-write coding))
+        (write-region new nil file nil 'silent)))))
 
 (defun weo/refactor--rename-file (old new)
   "Rename OLD to NEW, keeping its buffer, VCS and language server in sync."
@@ -350,7 +378,7 @@ Change hooks see one whole-buffer change, which keeps language servers in sync."
          (lsp-apply-edits-after-file-operations nil))
     (when buffer
       (with-current-buffer buffer
-        (let ((save-silently t)) (save-buffer))
+        (weo/refactor--save-raw)
         (when lsp (lsp--text-document-did-close))))
     (make-directory (file-name-directory new) t)
     (if (and (vc-backend old) (not (file-exists-p new)))
@@ -360,6 +388,8 @@ Change hooks see one whole-buffer change, which keeps language servers in sync."
       (with-current-buffer buffer
         (unless (equal (expand-file-name buffer-file-name) (expand-file-name new))
           (set-visited-file-name new nil t))
+        ;; set-visited-file-name drops the VC state, and with it `backup-inhibited'
+        (vc-refresh-state)
         (set-buffer-modified-p nil)
         (when lsp
           (setq lsp-buffer-uri nil)
@@ -370,7 +400,7 @@ Change hooks see one whole-buffer change, which keeps language servers in sync."
   (make-directory (file-name-directory file) t)
   (with-current-buffer (find-file-noselect file)
     (weo/refactor--replace-contents text)
-    (let ((save-silently t)) (save-buffer))))
+    (weo/refactor--save-raw)))
 
 (defun weo/refactor--delete-file (file)
   "Delete FILE and kill its buffer."
@@ -383,10 +413,29 @@ Change hooks see one whole-buffer change, which keeps language servers in sync."
 (defun weo/refactor--commit (results label &optional apply-content)
   "Apply RESULTS of the refactoring LABEL as one undoable step and return them.
 APPLY-CONTENT, when non-nil, is called to change the file buffers instead of
-copying each result's new text."
+copying each result's new text.  Without it, files no buffer visits are
+rewritten on disk directly: visiting and saving them would run mode hooks, VC
+and formatters for every file, which is slow on large projects and network
+drives."
   (let* ((content (seq-filter (lambda (r) (and (memq (plist-get r :kind) '(modified renamed))
                                                (plist-get r :new)))
                               results))
+         (unvisited (unless apply-content
+                      (seq-filter (lambda (r) (and (eq (plist-get r :kind) 'modified)
+                                                   (not (find-buffer-visiting (plist-get r :file)))))
+                                  content)))
+         (content (seq-remove (lambda (r) (memq r unvisited)) content))
+         (files (let (written)
+                  (condition-case err
+                      (dolist (r unvisited)
+                        (weo/refactor--write-text (plist-get r :file) (plist-get r :old) (plist-get r :new))
+                        (push r written))
+                    (error (dolist (r written)
+                             (weo/refactor--write-text (plist-get r :file) (plist-get r :new) (plist-get r :old)))
+                           (signal (car err) (cdr err))))
+                  (mapcar (lambda (r) (list (plist-get r :file) (plist-get r :old)
+                                            (secure-hash 'sha1 (plist-get r :new))))
+                          unvisited)))
          (snapshots (mapcar (lambda (r)
                               (let ((buffer (find-file-noselect (plist-get r :file))))
                                 (list buffer (with-current-buffer buffer
@@ -415,7 +464,8 @@ copying each result's new text."
         ('deleted
          (weo/refactor--delete-file (plist-get r :file))
          (push (list 'deleted (plist-get r :file) (plist-get r :old)) ops))))
-    (push (list :label label :time (current-time) :snapshots snapshots :ops ops) weo/refactor--history)
+    (push (list :label label :time (current-time) :snapshots snapshots :files files :ops ops)
+          weo/refactor--history)
     (when-let* ((tail (nthcdr (1- weo/refactor-history-size) weo/refactor--history)))
       (setcdr tail nil))
     (message "%s: %d file%s changed (%s undoes)" label (length results) (if (cdr results) "s" "")
@@ -446,6 +496,17 @@ asks for it.  Return the results when applied directly."
         (with-current-buffer buffer
           (weo/refactor--replace-contents text)
           (weo/refactor--save))))
+    (pcase-dolist (`(,file ,text ,hash) (plist-get entry :files))
+      (let ((buffer (find-buffer-visiting file))
+            (current (weo/refactor--content file)))
+        (when (or (equal hash (secure-hash 'sha1 current))
+                  (y-or-n-p (format "%s changed after \"%s\"; revert it anyway? "
+                                    (file-name-nondirectory file) label)))
+          (if buffer
+              (with-current-buffer buffer
+                (weo/refactor--replace-contents text)
+                (weo/refactor--save))
+            (weo/refactor--write-text file current text)))))
     (dolist (op (plist-get entry :ops))
       (pcase op
         (`(renamed ,old ,new) (weo/refactor--rename-file new old))
@@ -465,6 +526,7 @@ asks for it.  Return the results when applied directly."
       (dolist (entry weo/refactor--history)
         (insert (format-time-string "%H:%M:%S  " (plist-get entry :time)) (plist-get entry :label)
                 (propertize (format "  %d file(s)\n" (+ (length (plist-get entry :snapshots))
+                                                        (length (plist-get entry :files))
                                                         (length (plist-get entry :ops))))
                             'face 'shadow))))
     (goto-char (point-min))
@@ -514,16 +576,20 @@ CREATED diffs against /dev/null."
               ('created (insert (format "# create: %s\n" rel)))
               ('deleted (insert (format "# delete: %s\n" rel))))))
         (insert "\n")
-        (dolist (r results)
-          (when (and (memq (plist-get r :kind) '(modified renamed)) (plist-get r :new))
-            (insert (weo/refactor--diff (plist-get r :old) (plist-get r :new)
-                                        (file-relative-name (plist-get r :file) root)))))
-        (let ((boundary (point-marker)))
+        (let (diffs)
           (dolist (r results)
-            (when (eq (plist-get r :kind) 'created)
-              (insert (weo/refactor--diff "" (plist-get r :new)
-                                          (file-relative-name (plist-get r :file) root) t))))
-          (setq weo/refactor--pending (list :results results :label label :boundary boundary)))
+            (when (and (memq (plist-get r :kind) '(modified renamed)) (plist-get r :new))
+              (let ((diff (weo/refactor--diff (plist-get r :old) (plist-get r :new)
+                                              (file-relative-name (plist-get r :file) root))))
+                (push (cons (plist-get r :file) diff) diffs)
+                (insert diff))))
+          (let ((boundary (point-marker)))
+            (dolist (r results)
+              (when (eq (plist-get r :kind) 'created)
+                (insert (weo/refactor--diff "" (plist-get r :new)
+                                            (file-relative-name (plist-get r :file) root) t))))
+            (setq weo/refactor--pending (list :results results :label label :boundary boundary
+                                              :diffs diffs))))
         (goto-char (point-min))
         (setq buffer-read-only t)))
     (pop-to-buffer buffer)))
@@ -567,15 +633,25 @@ CREATED diffs against /dev/null."
                             results)))
           ('deleted (when (funcall present (format "# delete: %s\n" rel)) (push r results))))))
     (unless results (user-error "Nothing left to apply"))
-    (weo/refactor--commit
-     (nreverse results) (plist-get pending :label)
-     (lambda ()
-       (with-current-buffer preview
-         (save-excursion
-           (goto-char (point-min))
-           (when (re-search-forward "^@@" boundary t)
-             (when-let* ((failed (diff-apply-buffer (point-min) boundary nil 'no-save)))
-               (error "%d hunk(s) no longer apply; nothing was changed" failed)))))))
+    (setq results (nreverse results))
+    (if (seq-every-p (lambda (r) (or (not (memq (plist-get r :kind) '(modified renamed)))
+                                     (not (plist-get r :new))
+                                     (when-let* ((diff (alist-get (plist-get r :file) (plist-get pending :diffs)
+                                                                  nil nil #'equal)))
+                                       (funcall present diff boundary))))
+                     results)
+        ;; Every diff left is the one generated: apply the results as computed, which
+        ;; writes files nobody visits instead of visiting each to patch it.
+        (weo/refactor--commit results (plist-get pending :label))
+      (weo/refactor--commit
+       results (plist-get pending :label)
+       (lambda ()
+         (with-current-buffer preview
+           (save-excursion
+             (goto-char (point-min))
+             (when (re-search-forward "^@@" boundary t)
+               (when-let* ((failed (diff-apply-buffer (point-min) boundary nil 'no-save)))
+                 (error "%d hunk(s) no longer apply; nothing was changed" failed))))))))
     (quit-window t (get-buffer-window preview))))
 
 (defun weo/refactor-preview-cancel ()
@@ -723,39 +799,50 @@ Creates a parser when the grammar exists but the mode made none."
           (treesit-parser-create language)
           language))))
 
-(defun weo/refactor--lsp-point (file line character)
-  "Buffer position in FILE of the LSP position LINE, CHARACTER."
-  (with-current-buffer (find-file-noselect file)
-    (save-restriction
-      (widen)
-      (save-excursion
-        (goto-char (point-min))
-        (forward-line line)
-        (funcall (if (bound-and-true-p lsp--move-to-column-function)
-                     lsp--move-to-column-function
-                   #'weo/refactor--move-to-char)
-                 character)
-        (point)))))
+(defun weo/refactor--name-position (file line column move name texts)
+  "(FILE . POSITION) of NAME at or after COLUMN on LINE (from 0) of FILE, or nil.
+MOVE moves point to a column; TEXTS caches file contents.  A reference range
+may start before the name, as in a qualified Module.name, so the name itself
+is searched for.  Uses the current buffer's syntax table."
+  (let ((re (concat "\\_<" (regexp-quote name) "\\_>"))
+        (table (syntax-table)))
+    (with-temp-buffer
+      (insert (with-memoization (gethash file texts) (weo/refactor--content file)))
+      (with-syntax-table table
+        (goto-char (weo/refactor--resolve (cons line column) move))
+        (and (re-search-forward re (line-end-position) t)
+             (cons file (match-beginning 0)))))))
 
 (defun weo/refactor--references (pos name &optional declarations)
   "Usages of NAME at POS in the current buffer as (FILE . POSITION).
-Other declarations are included when DECLARATIONS is non-nil; POS never is."
+Other declarations are included when DECLARATIONS is non-nil; POS never is.
+Positions are computed from each file's text without visiting it."
   (if (weo/refactor--lsp-p "textDocument/references")
       (cl-loop with here = (cons buffer-file-name pos)
                with params = (append (lsp--text-document-position-params nil (lsp--point-to-position pos))
                                      (list :context
                                            (list :includeDeclaration (if declarations t :json-false))))
+               with column = (if (bound-and-true-p lsp--move-to-column-function)
+                                 lsp--move-to-column-function
+                               #'weo/refactor--move-to-char)
+               with texts = (make-hash-table :test 'equal)
                for location in (append (lsp-request "textDocument/references" params) nil)
-               for file = (lsp--uri-to-path (weo/refactor--get location :uri))
-               for start = (weo/refactor--get (weo/refactor--get location :range) :start)
-               for found = (cons file (weo/refactor--lsp-point file (weo/refactor--get start :line)
-                                                               (weo/refactor--get start :character)))
-               unless (equal found here) collect found)
-    (let ((here (cons buffer-file-name pos)))
-      (cl-loop for item in (ignore-errors (xref-backend-references (xref-find-backend) name))
-               for marker = (ignore-errors (xref-location-marker (xref-item-location item)))
-               for location = (and marker (weo/refactor--symbol-at-marker marker name))
-               when (and location (not (equal location here))) collect location))))
+               for start = (weo/refactor--lsp-position (weo/refactor--get (weo/refactor--get location :range) :start))
+               for found = (weo/refactor--name-position (lsp--uri-to-path (weo/refactor--get location :uri))
+                                                        (car start) (cdr start) column name texts)
+               when (and found (not (equal found here))) collect found)
+    (cl-loop with here = (cons buffer-file-name pos)
+             with texts = (make-hash-table :test 'equal)
+             for item in (ignore-errors (xref-backend-references (xref-find-backend) name))
+             for loc = (xref-item-location item)
+             for found = (if (xref-file-location-p loc)
+                             (weo/refactor--name-position (expand-file-name (xref-file-location-file loc))
+                                                          (1- (xref-file-location-line loc))
+                                                          (or (xref-file-location-column loc) 0)
+                                                          #'weo/refactor--move-to-char name texts)
+                           (when-let* ((marker (ignore-errors (xref-location-marker loc))))
+                             (weo/refactor--symbol-at-marker marker name)))
+             when (and found (not (equal found here))) collect found)))
 
 (defun weo/refactor--symbol-at-marker (marker name)
   "(FILE . POSITION) of NAME at MARKER or later on its line."
@@ -773,6 +860,14 @@ Other declarations are included when DECLARATIONS is non-nil; POS never is."
               (item (car (ignore-errors (xref-backend-definitions backend id)))))
     (xref-location-marker (xref-item-location item))))
 
+(defun weo/refactor--in-text-p (pos)
+  "Non-nil if POS is in a comment or string.
+Tree-sitter decides when the buffer has a parser: syntax tables misread some
+strings, such as Elixir heredocs."
+  (if (treesit-parser-list)
+      (string-match-p "comment\\|string\\|quoted_content\\|sigil" (treesit-node-type (treesit-node-at pos)))
+    (nth 8 (save-excursion (syntax-ppss pos)))))
+
 (defun weo/refactor--symbol-occurrences (name &optional beg end any)
   "Ranges of NAME as a whole symbol between BEG and END.
 Occurrences in comments and strings count only when ANY."
@@ -780,7 +875,7 @@ Occurrences in comments and strings count only when ANY."
     (goto-char (or beg (point-min)))
     (let ((re (concat "\\_<" (regexp-quote name) "\\_>")) found)
       (while (re-search-forward re end t)
-        (when (or any (not (nth 8 (save-excursion (syntax-ppss (match-beginning 0))))))
+        (when (or any (not (weo/refactor--in-text-p (match-beginning 0))))
           (push (cons (match-beginning 0) (match-end 0)) found)))
       (nreverse found))))
 
@@ -1045,7 +1140,7 @@ Occurrences that the spec BASE already edits are skipped."
                                      (and (not (memq (car range) taken))
                                           (if code
                                               (and comments
-                                                   (nth 8 (save-excursion (syntax-ppss (car range)))))
+                                                   (weo/refactor--in-text-p (car range)))
                                             text)))
                                    (weo/refactor--symbol-occurrences old nil nil t))))
           (setq spec (append spec (weo/refactor--ranges-spec file ranges new))))))
@@ -1069,7 +1164,17 @@ PREVIEW reviews the edits first."
          (extra (when (or (plist-get session :comments) (plist-get session :text))
                   (weo/refactor--text-occurrences-spec old new spec (plist-get session :comments)
                                                        (plist-get session :text))))
-         (file buffer-file-name))
+         (file buffer-file-name)
+         (shown (1+ (length (plist-get session :others))))
+         (renamed (cl-loop for op in spec
+                           when (and (eq (car op) 'text) file
+                                     (string= (expand-file-name (nth 1 op)) (expand-file-name file)))
+                           sum (length (nth 2 op)))))
+    ;; Servers that miss usages (macros, specs, unindexed files) would leave the code broken
+    (when (< renamed shown)
+      (display-warning 'refactor
+                       (format "Renaming %s renames %d of the %d occurrences highlighted in %s; \
+the rest keep the old name" old renamed shown (buffer-name))))
     (setq spec (weo/refactor--merge spec extra))
     (when (and (plist-get session :file) file
                (not (seq-find (lambda (op) (and (eq (car op) 'rename) (equal (nth 1 op) file))) spec)))
@@ -1117,7 +1222,7 @@ PREVIEW reviews the edits first."
       (goto-char beg)
       (while (re-search-forward re end t)
         (let ((b (match-beginning 0)) (e (match-end 0)))
-          (unless (or (nth 8 (save-excursion (syntax-ppss b)))
+          (unless (or (weo/refactor--in-text-p b)
                       (and (funcall symbol-char (char-after b)) (funcall symbol-char (char-before b)))
                       (and (funcall symbol-char (char-before e)) (funcall symbol-char (char-after e))))
             (push (cons b e) found)))))
@@ -1125,7 +1230,8 @@ PREVIEW reviews the edits first."
 
 (defun weo/refactor--suggest-name (expression)
   "Variable name suggested for EXPRESSION."
-  (let* ((trimmed (string-trim expression))
+  (let* ((case-fold-search nil)         ; [[:upper:]] matches any letter otherwise
+         (trimmed (string-trim expression))
          (word (cond ((string-match-p "\\`[\"'@$]" trimmed) "text")
                      ((string-match "\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]*([^()]*)[ \t]*\\'" trimmed)
                       (match-string 1 trimmed))
@@ -1136,7 +1242,8 @@ PREVIEW reviews the edits first."
                    (match-string 1 word)
                  word))
          (snake (derived-mode-p 'python-base-mode 'rust-mode 'rust-ts-mode 'ruby-mode 'ruby-ts-mode
-                                'elixir-mode 'elixir-ts-mode 'c-mode 'c-ts-mode 'zig-mode 'zig-ts-mode)))
+                                'elixir-mode 'elixir-ts-mode 'c-mode 'c-ts-mode 'zig-mode 'zig-ts-mode
+                                'odin-ts-mode)))
     (if snake
         (downcase (replace-regexp-in-string "\\([[:lower:][:digit:]]\\)\\([[:upper:]]\\)" "\\1_\\2" word t))
       (concat (downcase (substring word 0 1)) (substring word 1)))))
@@ -1186,7 +1293,11 @@ PREVIEW reviews the edits first."
                              (list bounds))
                          (mapc #'delete-overlay overlays)))
                    (list bounds)))
-         (name (weo/refactor--suggest-name expression))
+         (name (let* ((base (weo/refactor--suggest-name expression)) (name base) (n 1))
+                 ;; a name the scope already uses would shadow it
+                 (while (weo/refactor--symbol-occurrences name (treesit-node-start scope) (treesit-node-end scope))
+                   (setq name (format "%s%d" base (cl-incf n))))
+                 name))
          (indent (save-excursion (goto-char insert-at) (skip-chars-forward " \t")
                                  (buffer-substring-no-properties insert-at (point))))
          (line (concat indent (format template name expression) "\n"))
@@ -1221,7 +1332,9 @@ PREVIEW reviews the server's edits first."
 PREVIEW reviews the edits first."
   (interactive "P")
   (weo/refactor--run-matching "function\\|method" "refactor.extract"
-                              "The language server offers no Extract Method here; select the statements first"
+                              (if (use-region-p)
+                                  "The language server offers no Extract Method for this selection"
+                                "The language server offers no Extract Method here; select the statements first")
                               preview))
 
 (defun weo/refactor-inline (&optional preview)
@@ -1374,24 +1487,72 @@ PREVIEW reviews the edits first."
         (cons start end)))))
 
 (defun weo/refactor--signature-at (pos)
-  "(FUNCTION PARAMETERS NAME) nodes of the named function declared around POS."
+  "(FUNCTION PARAMETERS NAME) nodes of the named function declared around POS.
+Grammars that leave the parameter list or the name without a field (Zig, Odin,
+Ada) are recognized by node type."
   (cl-loop for node = (treesit-node-at pos) then (treesit-node-parent node)
            while node
            for declarator = (treesit-node-child-by-field-name node "declarator")
            for params = (or (treesit-node-child-by-field-name node "parameters")
-                            (and declarator (treesit-node-child-by-field-name declarator "parameters")))
+                            (and declarator (treesit-node-child-by-field-name declarator "parameters"))
+                            (treesit-search-subtree
+                             node (lambda (n) (string-match-p "\\`\\(?:parameters\\|parameter_list\\|formal_part\\)\\'"
+                                                              (treesit-node-type n)))
+                             nil nil 2))
            for name = (or (treesit-node-child-by-field-name node "name")
                           (and declarator
-                               (or (treesit-node-child-by-field-name declarator "declarator") declarator)))
+                               (or (treesit-node-child-by-field-name declarator "declarator") declarator))
+                          (and (string-match-p "declaration\\|definition" (treesit-node-type node))
+                               (seq-find (lambda (n) (equal (treesit-node-type n) "identifier"))
+                                         (treesit-node-children node t))))
            when (and params name) return (list node params name)))
 
+(defun weo/refactor--separator (nodes default)
+  "Text between the first two of NODES, else DEFAULT."
+  (if (cdr nodes)
+      (with-current-buffer (treesit-node-buffer (car nodes))
+        (buffer-substring-no-properties (treesit-node-end (car nodes)) (treesit-node-start (cadr nodes))))
+    default))
+
+(defun weo/refactor--call-with-file (file language function)
+  "Call FUNCTION in a buffer holding FILE's text parsed as LANGUAGE.
+That is FILE's own buffer when it is visited, else a temporary buffer, so
+reading many call sites visits no files."
+  (if-let* ((buffer (find-buffer-visiting file)))
+      (with-current-buffer buffer (save-restriction (widen) (funcall function)))
+    (with-temp-buffer
+      (insert (weo/refactor--content file))
+      (treesit-parser-create language)
+      (funcall function))))
+
+(defun weo/refactor--call-arguments (node pos)
+  "(BEG END ARGUMENTS) when NODE is a call whose arguments follow POS.
+BEG and END bound the text inside the parentheses; ARGUMENTS are the nodes."
+  (if-let* ((list (or (treesit-node-child-by-field-name node "arguments")
+                      (seq-find (lambda (n) (string-match-p "\\`\\(?:argument_list\\|actual_parameter_part\\)\\'"
+                                                            (treesit-node-type n)))
+                                (treesit-node-children node t)))))
+      (when (> (treesit-node-start list) pos)
+        (let ((inner (weo/refactor--inner list)))
+          (list (car inner) (cdr inner) (weo/refactor--named-children list))))
+    ;; Odin puts each argument directly under the call, between its parentheses
+    (let ((open (seq-find (lambda (n) (equal (treesit-node-type n) "(")) (treesit-node-children node)))
+          (close (seq-find (lambda (n) (equal (treesit-node-type n) ")")) (reverse (treesit-node-children node))))
+          (callee (treesit-node-child-by-field-name node "function")))
+      (when (and open close callee
+                 (<= (treesit-node-start callee) pos) (< pos (treesit-node-end callee))
+                 (> (treesit-node-start open) pos))
+        (list (treesit-node-end open) (treesit-node-start close)
+              (seq-filter (lambda (n) (equal (treesit-node-field-name n) "argument"))
+                          (treesit-node-children node t)))))))
+
 (defun weo/refactor--call-arguments-at (pos)
-  "Arguments node of the call whose callee is at POS."
+  "(BEG END ARGUMENTS) of the call whose callee is at POS; see `weo/refactor--call-arguments'."
   (cl-loop for node = (treesit-node-at pos) then (treesit-node-parent node)
            for depth from 0 below 5
            while node
-           for arguments = (treesit-node-child-by-field-name node "arguments")
-           when (and arguments (> (treesit-node-start arguments) pos)) return arguments))
+           for arguments = (weo/refactor--call-arguments node pos)
+           when arguments return arguments))
 
 (defun weo/refactor--signature-target ()
   "(BUFFER PARAMETERS NAME) of the function at point or called at point."
@@ -1406,9 +1567,12 @@ PREVIEW reviews the edits first."
           (_ (user-error "No function declaration at point")))))))
 
 (defun weo/refactor--receiver-p (node)
-  "Non-nil if the parameter NODE is an implicit receiver such as self."
-  (or (string-match-p "self" (treesit-node-type node))
-      (string-match-p "\\`\\(?:&\\(?:mut \\)?\\)?\\(?:self\\|cls\\)\\'" (treesit-node-text node t))))
+  "Non-nil if the parameter NODE is an implicit receiver such as self.
+A C# extension method's `this' parameter is one too."
+  (let ((case-fold-search nil))
+    (or (string-match-p "self" (treesit-node-type node))
+        (string-match-p "\\`\\(?:\\(?:&\\(?:mut \\)?\\)?\\(?:self\\|cls\\)\\'\\|this\\s-\\)"
+                        (treesit-node-text node t)))))
 
 (defun weo/refactor-change-signature ()
   "Add, remove and reorder the parameters of the function at point.
@@ -1446,11 +1610,16 @@ lines whose VALUE is passed at existing calls."
                     :end (copy-marker (cdr inner) t)
                     :texts (mapcar (lambda (n) (treesit-node-text n t)) children)
                     :receiver (and children (weo/refactor--receiver-p (car children)))
-                    :separator (if (string-match-p "\n" (buffer-substring (car inner) (cdr inner)))
-                                   (save-excursion
-                                     (goto-char (treesit-node-start (car children)))
-                                     (concat ",\n" (make-string (current-column) ?\s)))
-                                 ", "))))
+                    :language (weo/refactor--parser)
+                    :separator
+                    (let ((comma (if (equal (treesit-node-type params) "formal_part") ";" ","))) ; Ada uses ;
+                      (weo/refactor--separator
+                       children
+                       (if (and children (string-match-p "\n" (buffer-substring (car inner) (cdr inner))))
+                           (save-excursion
+                             (goto-char (treesit-node-start (car children)))
+                             (concat comma "\n" (make-string (current-column) ?\s)))
+                         (concat comma " ")))))))
       (goto-char (point-min))
       (re-search-forward "^\\[" nil t)
       (forward-line 0))
@@ -1492,30 +1661,31 @@ why the call cannot be rewritten instead."
                          (t (push arg out)))))))
       (nreverse out))))
 
-(defun weo/refactor--call-edit (file pos entries receiver parameters)
-  "Edit rewriting the usage at POS in FILE for ENTRIES.
+(defun weo/refactor--call-edit (pos entries receiver parameters)
+  "Edit rewriting the usage at POS in the current buffer for ENTRIES.
 Return a string explaining why when it cannot be rewritten.
-A call gets new arguments; another declaration of the function gets PARAMETERS."
-  (with-current-buffer (find-file-noselect file)
-    (let* ((parser (weo/refactor--parser))
-           (arguments (and parser (weo/refactor--call-arguments-at pos)))
-           (declaration (and parser (not arguments) (weo/refactor--signature-at pos))))
-      (cond
-       ((and declaration (= (treesit-node-start (nth 2 declaration)) pos))
-        (let ((inner (weo/refactor--inner (nth 1 declaration))))
-          (list (car inner) (cdr inner) parameters nil nil)))
-       ((null arguments) "not a call")
-       (t
-        (let ((children (weo/refactor--named-children arguments)))
-          (if (seq-find (lambda (n) (or (string-match-p "keyword\\|named" (treesit-node-type n))
-                                        (treesit-node-child-by-field-name n "name")))
-                        children)
-              "uses named arguments"
-            (let ((args (weo/refactor--map-arguments entries
-                                                     (mapcar (lambda (n) (treesit-node-text n t)) children)
-                                                     receiver))
-                  (inner (weo/refactor--inner arguments)))
-              (if (stringp args) args (list (car inner) (cdr inner) (string-join args ", ") nil nil))))))))))
+A call gets new arguments, keeping its separators; another declaration of the
+function gets PARAMETERS."
+  (let* ((parser (weo/refactor--parser))
+         (arguments (and parser (weo/refactor--call-arguments-at pos)))
+         (declaration (and parser (not arguments) (weo/refactor--signature-at pos))))
+    (cond
+     ((and declaration (= (treesit-node-start (nth 2 declaration)) pos))
+      (let ((inner (weo/refactor--inner (nth 1 declaration))))
+        (list (car inner) (cdr inner) parameters nil nil)))
+     ((null arguments) "not a call")
+     (t
+      (pcase-let ((`(,beg ,end ,children) arguments))
+        (if (seq-find (lambda (n) (or (string-match-p "keyword\\|named" (treesit-node-type n))
+                                      (treesit-node-child-by-field-name n "name")))
+                      children)
+            "uses named arguments"
+          (let ((args (weo/refactor--map-arguments entries
+                                                   (mapcar (lambda (n) (treesit-node-text n t)) children)
+                                                   receiver)))
+            (if (stringp args)
+                args
+              (list beg end (string-join args (weo/refactor--separator children ", ")) nil nil)))))))))
 
 (defun weo/refactor--signature-run (preview)
   "Apply the edited signature, previewing when PREVIEW or when calls conflict."
@@ -1539,12 +1709,14 @@ A call gets new arguments; another declaration of the function gets PARAMETERS."
     (pcase-dolist (`(,ref-file . ,pos) (with-current-buffer buffer
                                          (weo/refactor--references (marker-position (plist-get sig :position))
                                                                    (plist-get sig :name) t)))
-      (let ((edit (weo/refactor--call-edit ref-file pos entries (plist-get sig :receiver) parameters)))
+      (pcase-let ((`(,edit . ,line)
+                   (weo/refactor--call-with-file
+                    ref-file (plist-get sig :language)
+                    (lambda ()
+                      (cons (weo/refactor--call-edit pos entries (plist-get sig :receiver) parameters)
+                            (line-number-at-pos pos))))))
         (if (stringp edit)
-            (push (format "%s:%d %s" (file-relative-name ref-file)
-                          (with-current-buffer (find-file-noselect ref-file) (line-number-at-pos pos))
-                          edit)
-                  conflicts)
+            (push (format "%s:%d %s" (file-relative-name ref-file) line edit) conflicts)
           (push edit (gethash ref-file edits)))))
     (let (spec)
       (maphash (lambda (f e) (push (list 'text f e) spec)) edits)
