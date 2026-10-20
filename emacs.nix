@@ -173,6 +173,7 @@ in {
         # Theming
         doom-themes
         doom-modeline
+        modus-themes
         ewal
         ef-themes
         sculpture-themes
