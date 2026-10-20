@@ -23,7 +23,7 @@
   (interactive)
   (load-theme 'doom-wilmersdorf t))
 
-(load-theme 'ef-owl t) ;; Default theme
+(load-theme 'modus-vivendi t) ;; Default theme
 (define-prefix-command 'theme-prefix)
 (global-set-key (kbd "C-c t") 'theme-prefix)
 (define-key theme-prefix (kbd "t") #'consult-theme) ;; pick any installed theme, with preview
