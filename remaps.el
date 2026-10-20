@@ -89,8 +89,8 @@
 (global-set-key (kbd "C-y") #'weo/yank-replace-region)
 
 ;; Zapping
-(global-set-key (kbd "C-z") 'zap-up-to-char)
-(global-set-key (kbd "C-S-Z") 'zap-to-char)
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "M-S-Z") 'zap-to-char)
 
 ;;;;;;;;;; Mark/Registers ;;;;;;;;;;
 (defun weo/clear-mark-ring-command ()
