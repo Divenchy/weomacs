@@ -93,28 +93,80 @@
 (global-set-key (kbd "M-S-Z") 'zap-to-char)
 
 ;;;;;;;;;; Mark/Registers ;;;;;;;;;;
-(defun weo/clear-mark-ring-command ()
-  "Run your command or clear the mark-ring."
+;; Anchors: a global ring of locations set only by C-SPC.  Kept apart from `mark-ring' and
+;; `global-mark-ring', which yank, isearch, xref, etc. also push to; the global ring also keeps
+;; only one entry per buffer switch, so it cannot cycle through several anchors in one file.
+(defface weo/anchor '((t :background "deep sky blue" :foreground "black" :weight bold))
+  "Face highlighting the character at an anchor.")
+
+(defvar weo/anchors nil
+  "Anchor overlays.  The car is the next one to visit, the last the one visited most recently.")
+
+(defun weo/anchors--live ()
+  "Drop anchors whose buffer was killed and return the rest."
+  (setq weo/anchors (seq-filter #'overlay-buffer weo/anchors)))
+
+(defun weo/anchor--at-point ()
+  "Return the anchor at point in the current buffer, or nil."
+  (seq-find (lambda (ov) (and (eq (overlay-buffer ov) (current-buffer))
+                              (= (overlay-start ov) (point))))
+            weo/anchors))
+
+(defun weo/anchor-push ()
+  "Set an anchor at point."
   (interactive)
-  (setq mark-ring nil))
+  (if (weo/anchor--at-point)
+      (message "Anchor already here")
+    (let ((ov (make-overlay (point) (min (1+ (point)) (point-max)))))
+      ;; A face on a newline shows nothing, so mark line ends with a highlighted space.
+      ;; shortcut: chosen once here, an anchor whose character later becomes a newline or is
+      ;; deleted goes unhighlighted; redecorate on change if that bites.
+      (if (eolp)
+          (overlay-put ov 'before-string (propertize " " 'face 'weo/anchor))
+        (overlay-put ov 'face 'weo/anchor))
+      ;; Above visible-mark and hl-line overlays on the same character.
+      (overlay-put ov 'priority 10)
+      (setq weo/anchors (append (weo/anchors--live) (list ov)))
+      (message "Anchor set (%d)" (length weo/anchors)))))
 
-(defun push-mark-no-activate ()
-  "Pushes `point' to `mark-ring' and does not activate the region
-   Equivalent to \\[set-mark-command] when \\[transient-mark-mode] is disabled"
+(defun weo/anchor--step (backward)
+  "Rotate the anchor ring one step and return the anchor to visit."
+  (setq weo/anchors (if backward
+                        (append (last weo/anchors) (butlast weo/anchors))
+                      (append (cdr weo/anchors) (list (car weo/anchors)))))
+  (car (last weo/anchors)))
+
+(defun weo/anchor-next (&optional backward)
+  "Jump to the next anchor in any buffer, oldest first.  BACKWARD goes the other way.
+Selects the anchor's window if its buffer is shown in this frame."
   (interactive)
-  (push-mark (point) t nil)
-  (message "Pushed mark to ring"))
+  (unless (weo/anchors--live)
+    (user-error "No anchors"))
+  (let ((ov (weo/anchor--step backward)))
+    (when (and (eq ov (weo/anchor--at-point)) (cdr weo/anchors))
+      (setq ov (weo/anchor--step backward)))
+    (let* ((buf (overlay-buffer ov))
+           (win (get-buffer-window buf)))
+      (if win (select-window win) (switch-to-buffer buf))
+      (unless (<= (point-min) (overlay-start ov) (point-max))
+        (widen))
+      (goto-char (overlay-start ov)))))
 
-(global-set-key (kbd "C-SPC") 'push-mark-no-activate)
-
-(defun jump-to-mark ()
-  "Jumps to the local mark, respecting the `mark-ring' order.
-  This is the same as using \\[set-mark-command] with the prefix argument."
+(defun weo/anchor-prev ()
+  "Jump to the previous anchor in any buffer, newest first."
   (interactive)
-  (set-mark-command 1))
+  (weo/anchor-next t))
 
-(global-set-key (kbd "M-SPC") 'jump-to-mark)
-(global-set-key (kbd "C-M-SPC") 'pop-global-mark)
+(defun weo/anchor-clear ()
+  "Remove every anchor."
+  (interactive)
+  (mapc #'delete-overlay weo/anchors)
+  (setq weo/anchors nil)
+  (message "Anchors cleared"))
+
+(global-set-key (kbd "C-SPC") #'weo/anchor-push)
+(global-set-key (kbd "M-SPC") #'weo/anchor-prev)
+(global-set-key (kbd "C-M-SPC") #'weo/anchor-next)
 
 (defun exchange-point-and-mark-no-activate ()
   "Identical to \\[exchange-point-and-mark] but will not activate the region."
@@ -129,7 +181,7 @@
 ;; Mark prefix
 (define-prefix-command 'mark-prefix)
 (global-set-key (kbd "M-m") 'mark-prefix)
-(define-key mark-prefix (kbd "c") #'weo/clear-mark-ring-command)
+(define-key mark-prefix (kbd "c") #'weo/anchor-clear)
 (define-key mark-prefix (kbd "m") 'set-mark-command)
 (define-key mark-prefix (kbd "r") 'rectangle-mark-mode)
 (define-key mark-prefix (kbd "p") 'mark-paragraph)
