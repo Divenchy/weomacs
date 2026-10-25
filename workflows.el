@@ -117,6 +117,10 @@
 (global-set-key (kbd "C-c w") #'my/toggle-window-layout)
 
 ;; Claude Code IDE ;;
+;; Not on any archive; Nix provides it elsewhere, Windows clones the newest commit.
+;; Equivalent of `:vc (:url ... :rev :newest)', which can't be made Windows-only inside use-package.
+(when (and (eq system-type 'windows-nt) (not (package-installed-p 'claude-code-ide)))
+  (package-vc-install "https://github.com/manzaltu/claude-code-ide.el"))
 (use-package claude-code-ide
   :bind ("C-c C-'" . claude-code-ide-menu)
   :custom

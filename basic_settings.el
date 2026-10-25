@@ -7,9 +7,10 @@
 
 ;; Add package sources
 (require 'package)
-;; Git's MSYS gpg mangles Windows paths; use native GnuPG for package signatures
+;; MSYS gpg mangles Windows paths; use native GnuPG for package signatures.
+;; customize-set-variable, not setq/setopt: epg ignores the value unless it is marked customized.
 (when (eq system-type 'windows-nt)
-  (setq epg-gpg-program "C:/Program Files/GnuPG/bin/gpg.exe"))
+  (customize-set-variable 'epg-gpg-program "C:/Program Files/GnuPG/bin/gpg.exe"))
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 ;; Comment/uncomment this line to enable MELPA Stable if desired. 
