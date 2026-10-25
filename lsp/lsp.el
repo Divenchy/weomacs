@@ -49,6 +49,13 @@
 
 ;;;; Yasnippet
 (use-package yasnippet
+  ;; TAB (= C-i) is corfu-insert, so field navigation moves off it
+  :bind (:map yas-keymap
+              ("TAB" . nil)
+              ([(shift tab)] . nil)
+              ([backtab] . nil)
+              ("C-o" . yas-next-field)
+              ("C-S-o" . yas-prev-field))
   :config
   (yas-global-mode 1))
 

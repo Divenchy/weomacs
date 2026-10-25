@@ -128,6 +128,15 @@
   :config
   (claude-code-ide-emacs-tools-setup))
 
+;; Windows nils `shell-file-name-quote-list', so `split-string-shell-command' keeps the \" escapes
+;; claude-code-ide puts in --mcp-config and claude exits on the invalid JSON; parse POSIX-style instead.
+(when (eq system-type 'windows-nt)
+  (require 'shell) ; load the defcustom first, or the `let' below binds it lexically
+  (advice-add 'claude-code-ide--parse-command-string :around
+              (lambda (f &rest args)
+                (let ((shell-file-name-quote-list '(?\s ?$ ?* ?! ?\" ?' ?` ?# ?\\ ?\; ?& ?| ?< ?> ?\( ?\))))
+                  (apply f args)))))
+
 ;; Keep claude-code-ide buffer out from buffer rotation/predicates
 (defun weo/not-claude-buffer-p (buffer)
   "Non-nil unless BUFFER is a claude-code-ide session."
