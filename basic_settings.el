@@ -9,11 +9,27 @@
 (require 'package)
 ;; Git's MSYS gpg mangles Windows paths; use native GnuPG for package signatures
 (when (eq system-type 'windows-nt)
-  (setq epg-gpg-program "C:/Program Files (x86)/GnuPG/bin/gpg.exe"))
+  (setq epg-gpg-program "C:/Program Files/GnuPG/bin/gpg.exe"))
+
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
-;; and `package-pinned-packages`. Most users will not need or want to do this.
+;; Comment/uncomment this line to enable MELPA Stable if desired. 
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+
+;; Windows has no Nix: install the packages emacs.nix lists in `extraPackages' via package.el
+(defun weo/nix-package-list ()
+  "Return the epkgs symbols listed in emacs.nix."
+  (with-temp-buffer
+    (insert-file-contents (locate-user-emacs-file "emacs.nix"))
+    (when (re-search-forward "(with epkgs; \\[\\(\\(?:.\\|\n\\)*?\\)])" nil t)
+      (mapcar #'intern (split-string (replace-regexp-in-string "#.*" "" (match-string 1)))))))
+
+(when (and (eq system-type 'windows-nt) (file-exists-p (locate-user-emacs-file "emacs.nix")))
+  (let ((missing (seq-remove #'package-installed-p (weo/nix-package-list))))
+    (when missing
+      (package-refresh-contents)
+      (dolist (pkg missing)
+        (condition-case err (package-install pkg)
+          (error (message "weomacs: could not install %s: %s" pkg (error-message-string err))))))))
 
 (doom-modeline-mode 1)
 (scroll-bar-mode -1)
