@@ -26,34 +26,7 @@
               "**/.azure-pipelines/**/*.yml"
               "**/.azure-pipelines/**/*.yaml"
               "**/pipelines/**/*.yml"
-              "**/pipelines/**/*.yaml"])
-
-	  ;; Docker compose
-          (,(intern "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json")
-           . ["docker-compose.yml"
-              "docker-compose.yaml"
-              "docker-compose.*.yml"
-              "docker-compose.*.yaml"
-              "compose.yml"
-              "compose.yaml"])
-
-	  ;; Kubernetes
-          (,(intern "kubernetes")
-           . ["**/kubernetes/**/*.yml"
-              "**/kubernetes/**/*.yaml"
-              "**/k8s/**/*.yml"
-              "**/k8s/**/*.yaml"
-              "**/manifests/**/*.yml"
-              "**/manifests/**/*.yaml"
-              "deployment.yml"
-              "deployment.yaml"
-              "service.yml"
-              "service.yaml"])
-
-	  ;; Helm
-          (,(intern "https://json.schemastore.org/chart.json")
-           . ["Chart.yml"
-              "Chart.yaml"]))))
+              "**/pipelines/**/*.yaml"]))))
 
 ;;;; Custom Indentation
 (defun weo/yaml-cycle-indent ()

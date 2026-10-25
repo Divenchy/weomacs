@@ -123,3 +123,9 @@
   (claude-code-ide-terminal-backend 'ghostel)
   :config
   (claude-code-ide-emacs-tools-setup))
+
+;; Keep claude-code-ide buffer out from buffer rotation/predicates
+(defun weo/not-claude-buffer-p (buffer)
+  "Non-nil unless BUFFER is a claude-code-ide session."
+  (not (string-prefix-p "*claude-code[" (buffer-name buffer))))
+(modify-all-frames-parameters '((buffer-predicate . weo/not-claude-buffer-p)))

@@ -14,7 +14,7 @@
 ;; ghostel sends every key not in `ghostel-keymap-exceptions' to the terminal
 ;; customize-set-variable runs the option's :set, which rebuilds the semi-char keymap.
 (with-eval-after-load 'ghostel
-  (dolist (key '("M-c" "M-]"))
+  (dolist (key '("M-c" "M-]" "M-o"))
     (unless (member key ghostel-keymap-exceptions)
       (customize-set-variable 'ghostel-keymap-exceptions
                               (cons key ghostel-keymap-exceptions))))
