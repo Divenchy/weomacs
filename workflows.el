@@ -129,3 +129,24 @@
   "Non-nil unless BUFFER is a claude-code-ide session."
   (not (string-prefix-p "*claude-code[" (buffer-name buffer))))
 (modify-all-frames-parameters '((buffer-predicate . weo/not-claude-buffer-p)))
+
+;; Ediff's `delete-other-windows' can't remove side windows (claude sets no-delete-other-windows),
+;; which wrecks the A/B/C merge layout, so hide them for the session and restore on quit.
+(defvar weo/ediff-saved-windows nil)
+
+(defun weo/ediff-hide-side-windows ()
+  "Save the window layout, then hide side windows before Ediff lays out its windows."
+  (setq weo/ediff-saved-windows (current-window-configuration))
+  (when (window-with-parameter 'window-side)
+    (window-toggle-side-windows)))
+
+(defun weo/ediff-restore-windows ()
+  "Restore the layout saved by `weo/ediff-hide-side-windows'."
+  (when weo/ediff-saved-windows
+    (set-window-configuration weo/ediff-saved-windows)
+    (setq weo/ediff-saved-windows nil)))
+
+;; After load, so `ediff-quit-hook' keeps its default `ediff-cleanup-mess'.
+(with-eval-after-load 'ediff
+  (add-hook 'ediff-before-setup-hook #'weo/ediff-hide-side-windows)
+  (add-hook 'ediff-quit-hook #'weo/ediff-restore-windows t))
