@@ -26,10 +26,57 @@
       (locate-dominating-file default-directory ".clangd")
       default-directory))
 
+;;;; MSVC builds (Windows-only projects with a build.bat, run from WSL)
+(defvar weo/msvc-install-path "C:\\Program Files\\Microsoft Visual Studio\\18\\Community"
+  "Visual Studio install whose dev shell build.bat runs in.")
+
+(defvar weo/msvc--subst-drives 'unread
+  "Alist of `subst' drives (\"W:\") to their targets, read once from Windows.")
+
+(defun weo/msvc--subst-drives ()
+  "`subst' drive mappings, so MSVC paths on drives like W: resolve under WSL."
+  (when (eq weo/msvc--subst-drives 'unread)
+    (setq weo/msvc--subst-drives
+          (let ((default-directory "/mnt/c/"))
+            (delq nil (mapcar (lambda (line)
+                                (when (string-match "\\`\\([A-Za-z]:\\)\\\\: => \\(.+?\\)\\\\?\r?\\'" line)
+                                  (cons (upcase (match-string 1 line)) (match-string 2 line))))
+                              (ignore-errors (process-lines "cmd.exe" "/c" "subst")))))))
+  weo/msvc--subst-drives)
+
+(defun weo/msvc-local-path (file)
+  "WSL path of the Windows path FILE from MSVC output, resolving `subst' drives."
+  (if (not (string-match-p "\\`[A-Za-z]:[\\/]" file))
+      file
+    (let* ((target (cdr (assoc (upcase (substring file 0 2)) (weo/msvc--subst-drives))))
+           (file (if target (concat target (substring file 2)) file)))
+      ;; shortcut: assumes WSL's default /mnt automount root, read /etc/wsl.conf if that changes
+      (concat "/mnt/" (downcase (substring file 0 1)) "/"
+              (string-replace "\\" "/" (substring file 3))))))
+
+(defun weo/msvc-build (bat)
+  "Run BAT inside the Visual Studio x64 dev shell, parsing cl errors back to WSL paths."
+  (let* ((default-directory (file-name-directory bat))
+         (vs weo/msvc-install-path)
+         (coding-system-for-read 'utf-8-dos)
+         (buffer (compile
+                  (format "pwsh.exe -NoLogo -NoProfile -Command %s"
+                          (shell-quote-argument
+                           (format "Import-Module '%s\\Common7\\Tools\\Microsoft.VisualStudio.DevShell.dll'; Enter-VsDevShell -VsInstallPath '%s' -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -no_logo' | Out-Null; & '%s'; exit $LASTEXITCODE"
+                                   vs vs (string-trim (car (process-lines "wslpath" "-w" bat)))))))))
+    (with-current-buffer buffer
+      (setq-local compilation-parse-errors-filename-function #'weo/msvc-local-path))))
+
 ;;;; Build Commands
 (defun weo/c-compile ()
   "Compile C/C++ project."
   (interactive)
+  (if-let* ((dir (locate-dominating-file default-directory "build.bat")))
+      (weo/msvc-build (expand-file-name "build.bat" dir))
+    (weo/c--compile)))
+
+(defun weo/c--compile ()
+  "Compile a CMake, Make, Meson or single-file C/C++ project."
   (let ((default-directory (weo/c-project-root)))
     (cond
      ((file-exists-p "CMakeLists.txt")
