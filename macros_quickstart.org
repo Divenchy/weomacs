@@ -1,0 +1,87 @@
+
+* Macro Quickstart
+
+┌──────────────────┬─────────────────────────────────────────────────────────────────────────┐
+│       Key        │                              What it does                               │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ F3               │ Start recording. Pressed again while recording, it inserts a counter    │
+│                  │ value.                                                                  │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ F4               │ Stop recording. When not recording, it runs the last macro.             │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-u 5 F4         │ Run the macro 5 times.                                                  │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-0 F4           │ Run the macro until it fails, for example at the end of the buffer.     │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-1 F3           │ Start recording with the counter set to 1.                              │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-x C-k r        │ Run the macro once on every line in the region.                         │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-x C-k n        │ Give the last macro a name, so you can run it later with M-x <name>.    │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-x C-k b        │ Bind the last macro to a key. C-x C-k 0–9 and A–Z are reserved for      │
+│                  │ this.                                                                   │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-x C-k C-e      │ Edit the last macro as text.                                            │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-x C-k l        │ Build a macro from keys you've already pressed.                         │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ C-x C-k C-n /    │ Cycle through earlier macros.                                           │
+│ C-p              │                                                                         │
+└──────────────────┴─────────────────────────────────────────────────────────────────────────┘
+
+** Habits that make macros reliable
+
+1. Start by fixing your position, usually with C-a, so each run begins at the same place on the line.
+2. Move by meaning, not by counting characters. Use M-f, C-e, M-z or C-M-s rather than pressing C-f several times.
+3. End at the start of the next item, usually with C-n. Then repeated runs chain together, and C-0 F4 stops on its own at the end of the buffer.
+
+***** Pitfalls specific to this config
+
+- C-g cancels the recording.
+- C-s is consult-line. On replay it may jump to the wrong line, so search with C-M-s (isearch) instead.
+- Corfu pops up while you type. Don't press TAB in a macro, because it accepts a completion. RET and SPC are safe.
+- electric-pair inserts closing quotes and brackets. Replay presses the same keys, so the result is consistent, but check the first replay.
+- C-SPC is your anchor command, not set-mark. Use M-m m to set the mark, or M-m p to select a paragraph.
+
+** Exercises
+
+Paste each block into a scratch buffer (C-x b practice RET). Put point on line 1, record the keys, then press C-0 F4 to process the remaining lines. Leave out the trailing newline: if the text ends with an empty line, the macro runs one extra time on it.
+
+1. Bullets
+apple
+banana
+cherry
+Keys: F3 C-a - SPC C-e ; C-n F4. Here - and ; are the characters you type.
+Result: - apple;, - banana;, - cherry;
+
+2. Numbered list (counter)
+buy milk
+call mom
+write code
+Keys: C-1 F3 C-a F3 . SPC C-n F4. The second F3 inserts the counter, which goes up by 1 each run.
+Result: 1. buy milk, 2. call mom, 3. write code
+
+3. Swap "Last, First" (uses your M-z = zap-up-to-char)
+Smith, John
+Doe, Jane
+Lovelace, Ada
+Keys: F3 C-a M-z , C-d C-d C-e SPC C-y C-n F4
+M-z , cuts up to the comma, C-d C-d deletes the , , C-e goes to the end of the line, and C-y pastes the surname.
+Result: John Smith, Jane Doe, Ada Lovelace
+
+4. Run on each line of a region (no C-n needed)
+editor=emacs
+shell=zsh
+term=ghostel
+Record on line 1: F3 C-a e x p o r t SPC M-u F4. M-u uppercases the next word.
+Then select lines 2–3 and press C-x C-k r.
+Result: export EDITOR=emacs, export SHELL=zsh, export TERM=ghostel
+
+5. Save a macro permanently
+1. C-x C-k n weo-bullet RET names the last macro. You can now run it with M-x weo-bullet.
+2. Open workflows.el, then M-x insert-kbd-macro RET weo-bullet RET. This inserts (defalias 'weo-bullet (kmacro "C-a - SPC C-e ; C-n")).
+3. Add a binding: (global-set-key (kbd "C-x C-k 1") #'weo-bullet).
+4. Try it right away with load-file, or rebuild so it's deployed.
+
+6. Fix a mistake without re-recording: press C-x C-k C-e, edit the key list as text, then C-c C-c to save.

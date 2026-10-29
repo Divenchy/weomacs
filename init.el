@@ -9,6 +9,7 @@
 
 ;; Custom funcs
 (load-file "~/.emacs.d/visible-mark.el")
+(load-file "~/.emacs.d/dot-repeat.el")
 
 ;; Theming
 (load-file "~/.emacs.d/themes.el")

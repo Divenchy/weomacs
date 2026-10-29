@@ -26,7 +26,7 @@
   :config
   (corfu-prescient-mode 1)
   ;; corfu-prescient binds `prescient-toggle-map' here; let global `save-buffer' through
-  (define-key corfu-map (kbd "M-s") nil))
+  (define-key corfu-map (kbd "M-'") nil))
 
 ;;;; Cape
 (use-package cape

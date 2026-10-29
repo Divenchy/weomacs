@@ -75,27 +75,75 @@
 		shell-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 (setq visible-bell t)
+(setq dabbrev-case-replace nil) ;; Insert expansions with their original casing
 (electric-pair-mode 1)
-(defun weo/electric-pair-wrap-word (char)
-  "Better wrapping with pairing tokens."
-  (cond
-   ((and (eq (char-syntax char) ?\")
-	 (oddp (how-many (regexp-quote (string char)) (pos-bol) (1-(point)))))
-    t)
-   ((memq (char-syntax (or (char-after) ?\s)) '(?w ?_))
-    (unless (memq (char-syntax (or (char-before (1-(point))) ?\s)) '(?w ?_))
+(defvar weo/pair-token-syntax
+  '(((powershell-mode) "$@")
+    ((csharp-mode csharp-ts-mode) "@$" "?.")
+    ((zig-mode zig-ts-mode) "@")
+    ((odin-ts-mode) "#$")
+    ((elixir-mode elixir-ts-mode heex-ts-mode) "@:%~")
+    ((ada-mode ada-ts-mode) "" "'"))
+  "Per-mode (MODES SIGILS . CONNECTORS) for `weo/electric-pair-wrap'.
+SIGILS are chars that may start a token; CONNECTORS join identifiers besides \".\" and \"::\".")
+
+(defun weo/pair--syntax ()
+  "Return (SIGILS . CONNECTORS) for the current major mode."
+  (or (cdr (seq-find (lambda (e) (apply #'derived-mode-p (car e))) weo/pair-token-syntax))
+      '("")))
+
+(defun weo/pair--token-end (quote)
+  "Return the end of the token after point, or nil.
+A token is sigils, then identifiers joined by connectors, with attached (), [] or {}
+groups.  Unless QUOTE, a string literal at its start counts too, as in $\"...\"."
+  (pcase-let ((`(,sigils . ,connectors) (weo/pair--syntax))
+              (end nil))
+    (save-excursion
+      (while (memq (char-after) (string-to-list sigils))
+        (forward-char))
+      (while (let ((syn (char-syntax (or (char-after) ?\s))))
+               (cond ((memq syn '(?w ?_))
+                      (setq end (progn (skip-syntax-forward "w_") (point))))
+                     ((and end (seq-find (lambda (c)
+                                           (and (looking-at (regexp-quote c))
+                                                (memq (char-syntax (or (char-after (+ (point) (length c))) ?\s))
+                                                      '(?w ?_))
+                                                (progn (forward-char (length c)) t)))
+                                         (append '("." "::") connectors))))
+                     ((or (eq syn ?\() (and (eq syn ?\") (not quote) (not end)))
+                      (when-let* ((next (ignore-errors (scan-sexps (point) 1))))
+                        (setq end (goto-char next)))))))
+      end)))
+
+(defun weo/electric-pair-wrap (char)
+  "Decide pairing for CHAR; return non-nil to stop `electric-pair-mode' adding a closer.
+An opener or quote typed right before a token wraps the whole token, e.g. $myVar or
+${x} -> \"$myVar\"; { never wraps.  A ' after a letter is an apostrophe or Ada tick and
+never pairs.  Before a token char that can't be wrapped, no closer.  Otherwise electric-pair decides."
+  (let* ((before (char-before (1- (point))))
+         (quote (eq (char-syntax char) ?\"))
+         (end (weo/pair--token-end quote)))
+    (cond
+     ((and (eq char ?') before (eq (char-syntax before) ?w)) t)
+     ;; Typed inside a string, the quote closes or splits it.  Read the state after CHAR:
+     ;; `syntax-ppss' before it leaves a stale cache that breaks electric-pair's balance check.
+     ((and quote (not (eql (nth 3 (syntax-ppss)) char))) end)
+     ;; { before code usually starts a block, so it never wraps
+     ((and end
+           (not (eq char ?{))
+           (or (null before)
+               (not (memq (char-syntax before) '(?w ?_)))
+               (memq before (string-to-list (car (weo/pair--syntax))))))
       (save-excursion
-	;; Treat dotted names as one word
-	(while (progn (skip-syntax-forward "w_")
-		      (and (eq (char-after) ?.)
-			   (memq (char-syntax (or (char-after (1+(point))) ?\s)) '(?w ?_))))
-	  (forward-char))
-	(insert (or (matching-paren char) char))))
-    t)))
+        (goto-char end)
+        (insert (if quote char (or (matching-paren char) char))))
+      t)
+     (t end))))
+
 ;; Per buffer, since c-mode csharp-mode install their own predicate
 (add-hook 'after-change-major-mode-hook
 	  (lambda ()
-	    (add-function :before-until (local 'electric-pair-inhibit-predicate) #'weo/electric-pair-wrap-word)))
+	    (add-function :before-until (local 'electric-pair-inhibit-predicate) #'weo/electric-pair-wrap)))
 
 (setq-default fill-column 110)
 (setq-default display-fill-column-indicator-column 110)

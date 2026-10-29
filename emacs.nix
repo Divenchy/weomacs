@@ -214,6 +214,7 @@ in {
     ".emacs.d/init.el".source = ./init.el;
     ".emacs.d/qol.el".source = ./qol.el;
     ".emacs.d/visible-mark.el".source = ./visible-mark.el;
+    ".emacs.d/dot-repeat.el".source = ./dot-repeat.el;
     ".emacs.d/workflows.el".source = ./workflows.el;
     ".emacs.d/remaps.el".source = ./remaps.el;
     ".emacs.d/navigator.el".source = ./navigator.el;
