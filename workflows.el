@@ -13,7 +13,6 @@
   (magit-revision-insert-related-refs nil)
   (auto-revert-buffer-list-filter #'magit-auto-revert-repository-buffer-p)
   :config
-  ;; `git describe' walks the whole history
   (remove-hook 'magit-status-headers-hook #'magit-insert-tags-header))
 
 ;; Projectile ;;
@@ -101,6 +100,8 @@
 (define-key workspace-prefix (kbd "w") #'weo/workspace-switch)
 (define-key workspace-prefix (kbd "RET") #'weo/workspace-next)
 (define-key workspace-prefix (kbd "k") #'weo/workspace-kill)
+(global-set-key (kbd "C-<right>") #'tab-bar-switch-to-next-tab)
+(global-set-key (kbd "C-<left>") #'tab-bar-switch-to-prev-tab)
 (bind-key* "M-q" #'weo/workspace-buffer)
 
 

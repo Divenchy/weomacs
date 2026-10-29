@@ -196,10 +196,7 @@ Selects the anchor's window if its buffer is shown in this frame."
 (global-set-key (kbd "M-w") 'kill-ring-save)
 
 ;;;;;;;; Lines ;;;;;;;;
-
 (global-set-key (kbd "M-i") 'back-to-indentation)
-
-
 
 ;;;;;;;; Files & Buffers ;;;;;;;;
 (define-prefix-command 'file-prefix)
@@ -303,6 +300,7 @@ Selects the anchor's window if its buffer is shown in this frame."
   (other-window 1))
 
 (global-set-key (kbd "C-q") 'quit-prefix)
+(define-key minibuffer-local-map (kbd "C-q") #'quoted-insert)
 ;; Quitting emacs
 (defun weo/force-quit ()
   "Quit Emacs immediately without saving."
