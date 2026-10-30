@@ -113,6 +113,41 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
                (if compiled-with-plists "on" "off") lsp-use-plists)
        :error))))
 
+;;;; Xref History
+(defvar weo/xref--landing nil
+  "Marker where the last xref jump or history step landed.")
+
+(defvar weo/xref--stepping nil)
+
+(defun weo/xref--record-landing ()
+  "Remember point as where the current xref move landed."
+  (setq weo/xref--landing (point-marker)))
+
+(defun weo/xref--forget-landing (&rest _)
+  "Drop the landing spot; a new jump whose destination never runs the hook falls back to point."
+  (setq weo/xref--landing nil))
+
+(defun weo/xref--step-from-landing (step)
+  "Run xref history STEP, saving the last landing spot rather than point."
+  (let ((weo/xref--stepping t))
+    (funcall step))
+  (weo/xref--record-landing))
+
+(defun weo/xref--landing-args (args)
+  "While stepping, replace the marker in ARGS with the last landing spot."
+  (if (and weo/xref--stepping (markerp weo/xref--landing) (marker-buffer weo/xref--landing))
+      (list (copy-marker weo/xref--landing))
+    args))
+
+(use-package xref
+  :config
+  (add-hook 'xref-after-jump-hook #'weo/xref--record-landing)
+  (advice-add 'xref-push-marker-stack :after #'weo/xref--forget-landing)
+  (advice-add 'xref-go-back :around #'weo/xref--step-from-landing)
+  (advice-add 'xref-go-forward :around #'weo/xref--step-from-landing)
+  (advice-add 'xref--push-backward :filter-args #'weo/xref--landing-args)
+  (advice-add 'xref--push-forward :filter-args #'weo/xref--landing-args))
+
 ;;;; LSP Mode Configuration
 (use-package lsp-mode
   :init
