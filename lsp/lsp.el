@@ -205,8 +205,8 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
   (lsp-ui-doc-show-with-mouse t)
   (lsp-ui-sideline-enable t)
   (lsp-ui-sideline-show-diagnostics t)
-  (lsp-ui-sideline-show-code-actions t))
-
+  (lsp-ui-sideline-show-code-actions t)
+  (lsp-ui-peek-always-show t))
 ;;;; LSP Treemacs
 (use-package lsp-treemacs
   :after lsp-mode
