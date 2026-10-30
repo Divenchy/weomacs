@@ -130,6 +130,9 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
 
   :config
   (weo/lsp-check-plists)
+  ;; `lsp-find-definition' pushes the xref marker stack; pop it back toward the first jump
+  (define-key lsp-mode-map (kbd "<left>") #'xref-go-back)
+  (define-key lsp-mode-map (kbd "<right>") #'xref-go-forward)
 
   ;; lsp-mode's defaults already cover target, _build, obj, .gradle, ...
   (dolist (dir '("[/\\\\]build\\'"
