@@ -105,8 +105,6 @@ in {
         yaml-mode
         dotnet
         powershell
-        elixir-ts-mode
-        heex-ts-mode
         reformatter
         inf-elixir
         exunit
