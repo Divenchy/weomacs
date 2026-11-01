@@ -93,8 +93,8 @@ in {
           env = (old.env or {}) // {LSP_USE_PLISTS = "true";};
         }));
 
-    extraPackages = epkgs:
-      (with epkgs; [
+    extraPackages = emacsPackages:
+      (with emacsPackages; [
         # Langs
         ada-ts-mode
         glsl-mode
@@ -183,7 +183,7 @@ in {
       ++ [
         ats2-mode
         claude-code-ide
-        (epkgs.trivialBuild {
+        (emacsPackages.trivialBuild {
           pname = "odin-ts-mode";
           version = "unstable";
           src = pkgs.fetchFromGitHub {
