@@ -173,3 +173,10 @@
   
   :config
   (gcmh-mode 1))
+
+;; PDF viewing. Nix ships a prebuilt epdfinfo; on Windows `pdf-tools-install' builds it (needs MSYS2).
+(use-package pdf-tools
+  :magic ("%PDF" . pdf-view-mode)
+  :config
+  (pdf-tools-install :no-query)
+  (setq-default pdf-view-display-size 'fit-page))

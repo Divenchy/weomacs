@@ -173,6 +173,7 @@ in {
         command-log-mode
         evil-nerd-commenter
         visual-fill-column
+        pdf-tools
         
         # Theming
         doom-themes

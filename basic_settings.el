@@ -38,6 +38,7 @@
 (tooltip-mode -1)
 (set-fringe-mode 0)
 (menu-bar-mode -1)
+(auto-revert-mode 1)
 (show-paren-mode 1)
 (global-subword-mode 1)
 (repeat-mode 1)
@@ -72,7 +73,8 @@
 (dolist (mode '(org-mode-hook
 		ghostel-mode-hook
 		term-mode-hook
-		shell-mode-hook))
+		shell-mode-hook
+		pdf-view-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 (setq visible-bell t)
 (setq dabbrev-case-replace nil) ;; Insert expansions with their original casing
