@@ -50,6 +50,8 @@ in {
     nil
     clang-tools
     typescript-language-server
+    jdt-language-server
+    metals
     
     yaml-language-server
     powershell-editor-services
@@ -109,6 +111,10 @@ in {
         inf-elixir
         exunit
         mix
+        lsp-java
+        scala-ts-mode
+        lsp-metals
+        sbt-mode
 
         # Dev
         exec-path-from-shell
@@ -206,6 +212,8 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-cpp.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-cpp}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-ada.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-ada}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-c-sharp.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-c-sharp}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-java.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-java}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-scala.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-scala}/parser";
     
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/early-init.el".source = ./early-init.el;
@@ -228,5 +236,7 @@ in {
     ".emacs.d/lsp/langs/elixir.el".source = ./lsp/langs/elixir.el;
     ".emacs.d/lsp/langs/powershell.el".source = ./lsp/langs/powershell.el;
     ".emacs.d/lsp/langs/c.el".source = ./lsp/langs/c.el;
+    ".emacs.d/lsp/langs/java.el".source = ./lsp/langs/java.el;
+    ".emacs.d/lsp/langs/scala.el".source = ./lsp/langs/scala.el;
   };
 }

@@ -81,6 +81,8 @@
         (odin "https://github.com/ap29600/tree-sitter-odin")
 	(ada "https://github.com/briot/tree-sitter-ada")
         (c-sharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
+        (java "https://github.com/tree-sitter/tree-sitter-java")
+        (scala "https://github.com/tree-sitter/tree-sitter-scala")
         (zig "https://github.com/tree-sitter-grammars/tree-sitter-zig")))
 
 (when (treesit-available-p)
@@ -298,3 +300,5 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
 (load-file "~/.emacs.d/lsp/langs/yaml.el")
 (load-file "~/.emacs.d/lsp/langs/powershell.el")
 (load-file "~/.emacs.d/lsp/langs/c.el")
+(load-file "~/.emacs.d/lsp/langs/java.el")
+(load-file "~/.emacs.d/lsp/langs/scala.el")
