@@ -18,6 +18,3 @@ session.*
 # Transient files
 tramp
 transient/
-/.claude/
-/.mcp.json
-/CLAUDE.md
