@@ -31,7 +31,7 @@ optional packages (`posframe-*` not known to be defined) are expected under `-Q`
 `init.el` loads `~/.emacs.d/*.el`, which home-manager symlinks from this repo via `emacs.nix`.
 Repo edits take effect only after the user runs `home-manager switch`. A new .el file needs an entry in
 `emacs.nix` (`".emacs.d/X.el".source = ./X.el;`) and a `load-file` line. Tests are not deployed.
-After a rebuild, `/smoke-test` checks the whole config loads.
+After edits, run the `verify-build` skill; after a rebuild, `/smoke-test` checks the deployed config.
 
 ## Live session
 `emacsclient --eval '(load-file "/home/nixweosl/weomacs/FILE.el")'` changes the user's running

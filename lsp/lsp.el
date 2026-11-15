@@ -34,12 +34,12 @@
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
-  :bind (("C-c a p" . completion-at-point)
-         ("C-c a d" . cape-dabbrev)
-         ("C-c a f" . cape-file)
-         ("C-c a k" . cape-keyword)
-         ("C-c a s" . cape-elisp-symbol)
-         ("C-c a h" . cape-history)))
+  :bind (("C-c c p" . completion-at-point)
+         ("C-c c d" . cape-dabbrev)
+         ("C-c c f" . cape-file)
+         ("C-c c k" . cape-keyword)
+         ("C-c c s" . cape-elisp-symbol)
+         ("C-c c h" . cape-history)))
 
 ;;;; Kind-icon
 (use-package kind-icon
