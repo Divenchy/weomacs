@@ -225,6 +225,7 @@ in {
     ".emacs.d/workflows.el".source = ./workflows.el;
     ".emacs.d/remaps.el".source = ./remaps.el;
     ".emacs.d/navigator.el".source = ./navigator.el;
+    ".emacs.d/alarms.el".source = ./alarms.el;
     ".emacs.d/themes.el".source = ./themes.el;
     ".emacs.d/org.el".source = ./org.el;
     ".emacs.d/lsp/lsp.el".source = ./lsp/lsp.el;

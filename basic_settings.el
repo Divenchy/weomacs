@@ -70,8 +70,7 @@
 (setq display-line-numbers-type 'relative)
 (global-display-line-numbers-mode t)
 ;; Disable rel nums lines for select modes
-(dolist (mode '(org-mode-hook
-		ghostel-mode-hook
+(dolist (mode '(ghostel-mode-hook
 		term-mode-hook
 		shell-mode-hook
 		pdf-view-mode-hook))

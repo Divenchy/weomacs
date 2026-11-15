@@ -11,6 +11,10 @@
                           '(("^ *\\([-]\\) "
                              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
+  ;; `variable-pitch-mode' body text otherwise falls back to the system sans font (DejaVu Sans)
+  (set-face-attribute 'variable-pitch nil :family "Iosevka NF")
+  (set-face-attribute 'fixed-pitch nil :family "Iosevka NF")
+
   ;; Set faces for heading levels
   (dolist (face '((org-level-1 . 1.5)
                   (org-level-2 . 1.35)
@@ -31,8 +35,28 @@
   (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
 
+(defun weo/org-insert-item ()
+  "Add a list item below the current one, like C-RET does for headings.
+Outside a list, start one on a new line.  In a table, copy the field down as S-RET did."
+  (interactive)
+  (cond
+   ((org-at-table-p) (call-interactively #'org-table-copy-down))
+   ((org-in-item-p)
+    (goto-char (org-in-item-p))
+    (let ((checkbox (org-at-item-checkbox-p)))
+      ;; From the end of the item's last line, so the new item follows it instead of splitting it
+      (goto-char (org-list-get-item-end-before-blank (point) (org-list-struct)))
+      (skip-chars-backward " \t\n")
+      (org-insert-item checkbox)))
+   (t
+    (end-of-line)
+    (newline-and-indent)
+    (insert "- "))))
+
 (use-package org
   :hook (org-mode . weo/org-mode-setup)
+  :bind (:map org-mode-map
+              ("S-<return>" . weo/org-insert-item))
   :config
   (setq org-ellipsis ""
 	org-hide-emphasis-markers t)

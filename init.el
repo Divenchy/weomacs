@@ -6,6 +6,7 @@
 ;; Emacs remaps
 (load-file "~/.emacs.d/remaps.el")
 (load-file "~/.emacs.d/navigator.el")
+(load-file "~/.emacs.d/alarms.el")
 
 ;; Custom funcs
 (load-file "~/.emacs.d/visible-mark.el")

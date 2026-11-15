@@ -4,7 +4,9 @@
 
 ;; Nine numbered slots for fast buffer switching, modelled on nvim's harpoon.  Jumping to a slot
 ;; returns to where you last were in that buffer rather than to a fixed bookmark position.  Each
-;; tab-bar tab (workspace) has its own slots; a new tab starts empty.
+;; tab-bar tab (workspace) has its own slots.  A tab's file slots are saved under its project root
+;; in `navigator-save-file' when the tab closes, when Emacs exits and on every add or remove; a new
+;; tab in the same project gets them back on first use.  A tab outside a project starts empty.
 ;;
 ;; M-n opens a popup centred in the frame.  While it is shown: 1-9 jump, a adds the current
 ;; buffer, C-n/C-p move, RET opens, C-k/DEL removes, q/C-g closes.  M-N/M-P visit the next/previous
@@ -13,6 +15,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'project)
 (require 'tab-bar)
 
 (defconst navigator--size 9
@@ -21,15 +24,72 @@
 (defconst navigator--buffer " *navigator*"
   "Name of the buffer shown in the popup.")
 
+(defcustom navigator-save-file (locate-user-emacs-file "navigator.eld")
+  "File holding each project's Navigator file slots between sessions."
+  :type 'file
+  :group 'convenience)
+
+(defun navigator--read ()
+  "Return the alist of saved slots from `navigator-save-file'.
+Return nil if the file is missing or unreadable."
+  (ignore-errors
+    (with-temp-buffer
+      (insert-file-contents navigator-save-file)
+      (read (current-buffer)))))
+
+(defvar navigator--saved (navigator--read)
+  "Alist of (ROOT . SLOTS) for every project with saved slots.
+SLOTS is a vector of nil or (FILE . POS), as in `navigator--slots'.")
+
+(defun navigator--root ()
+  "Return the abbreviated root of the current buffer's project, or nil."
+  (when-let* ((project (project-current)))
+    (abbreviate-file-name (project-root project))))
+
 (defun navigator--slots ()
   "Return the current tab's slot vector, creating it on first use.
 Each entry is nil or (TARGET . POS).  TARGET is the file name of a file
 buffer, else the buffer itself.  POS is point when the file's buffer was
 killed, used when the file is reopened.  The vector lives in the tab's
-`navigator' parameter, which tab-bar carries across tab switches."
+`navigator' parameter, which tab-bar carries across tab switches.  A new
+vector starts from the slots saved for the current buffer's project, whose
+root is kept in the tab's `navigator-root' parameter."
   (let ((tab (assq 'current-tab (tab-bar-tabs))))
     (or (alist-get 'navigator (cdr tab))
-        (setf (alist-get 'navigator (cdr tab)) (make-vector navigator--size nil)))))
+        (let ((root (navigator--root)))
+          (setf (alist-get 'navigator-root (cdr tab)) root)
+          (setf (alist-get 'navigator (cdr tab))
+                (or (copy-sequence (cdr (assoc root navigator--saved)))
+                    (make-vector navigator--size nil)))))))
+
+(defun navigator--saved-slot (slot)
+  "Return SLOT as saved: (FILE . POS), or nil for a non-file slot.
+POS comes from FILE's buffer when it is live."
+  (pcase slot
+    (`(,(and (pred stringp) file) . ,pos)
+     (let ((buffer (get-file-buffer file)))
+       (cons file (if buffer (with-current-buffer buffer (point)) pos))))))
+
+(defun navigator--save (&rest _)
+  "Save every tab's file slots under its project root in `navigator-save-file'.
+A project whose slots are all empty is dropped.  Ignores its arguments so it
+can run from `tab-bar-tab-pre-close-functions'."
+  (dolist (frame (frame-list))
+    (dolist (tab (frame-parameter frame 'tabs))
+      (when-let* ((root (alist-get 'navigator-root (cdr tab)))
+                  (slots (alist-get 'navigator (cdr tab))))
+        (let ((saved (cl-map 'vector #'navigator--saved-slot slots)))
+          (setf (alist-get root navigator--saved nil t #'equal)
+                (and (cl-some #'identity saved) saved))))))
+  ;; Demoted so a failed write never blocks closing a tab or exiting Emacs.
+  (with-demoted-errors "Navigator: cannot save slots: %S"
+    (let ((print-length nil)
+          (print-level nil))
+      (with-temp-file navigator-save-file
+        (prin1 navigator--saved (current-buffer))))))
+
+(add-hook 'kill-emacs-hook #'navigator--save)
+(add-hook 'tab-bar-tab-pre-close-functions #'navigator--save)
 
 (defvar navigator--selected 0
   "Index of the selected slot in the popup.")
@@ -142,6 +202,7 @@ Does nothing but report the slot if the buffer already has one."
         (unless i
           (user-error "Navigator: all %d slots are full" navigator--size))
         (aset slots i (list (navigator--target buffer)))
+        (navigator--save)
         (message "Navigator: %s added to slot %d" (buffer-name buffer) (1+ i))))))
 
 (defun navigator-jump (n)
@@ -183,6 +244,7 @@ Interactively, N is the digit typed in the \\[navigator] popup, else the prefix 
   "Empty the slot selected in the Navigator popup.  Other slots keep their numbers."
   (interactive)
   (aset (navigator--slots) navigator--selected nil)
+  (navigator--save)
   (let ((filled (navigator--filled)))
     (setq navigator--selected (or (cl-find-if (lambda (i) (> i navigator--selected)) filled)
                                   (car (last filled))

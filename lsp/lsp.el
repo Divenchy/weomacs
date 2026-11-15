@@ -46,6 +46,10 @@
   :after corfu
   :custom
   (kind-icon-default-face 'corfu-default)
+  ;; A full-height (1.0) SVG icon sits centred on the text and makes each row ~7px taller than the
+  ;; line height corfu sizes its popup by, cutting off the last candidate.  0.8 fits the line.
+  (kind-icon-default-style
+   '(:padding 0 :stroke 0 :margin 0 :radius 0 :height 0.8 :scale 1.0 :background nil))
   :config
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
