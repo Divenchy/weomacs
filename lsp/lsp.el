@@ -87,18 +87,15 @@
         (c-sharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
         (java "https://github.com/tree-sitter/tree-sitter-java")
         (scala "https://github.com/tree-sitter/tree-sitter-scala")
+        (haskell "https://github.com/tree-sitter/tree-sitter-haskell")
+        (fsharp "https://github.com/ionide/tree-sitter-fsharp" "main" "fsharp/src")
+        (fsharp-signature "https://github.com/ionide/tree-sitter-fsharp" "main" "fsharp_signature/src")
         (zig "https://github.com/tree-sitter-grammars/tree-sitter-zig")))
 
 (when (treesit-available-p)
   (dolist (remap '((csharp-mode . csharp-ts-mode)
                    (yaml-mode . yaml-ts-mode)))
     (add-to-list 'major-mode-remap-alist remap)))
-
-(use-package odin-ts-mode
-  :mode "\\.odin\\'")
-
-;;(require 'ats2-mode)
-;;(add-to-list 'auto-mode-alist '("\\.\\(sats\\|dats\\|hats\\|cats\\)\\'" . ats2-mode))
 
 ;;;; LSP Performance
 ;; - Native JSON: built into Emacs 30+, nothing to do.
@@ -233,6 +230,8 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
    (toml-ts-mode . lsp-deferred)
    (powershell-mode . lsp-deferred)
    (glsl-mode . lsp-deferred)
+   (haskell-ts-mode . lsp-deferred)
+   (fsharp-ts-mode . lsp-deferred)
    (lsp-mode . lsp-enable-which-key-integration))
 
   :commands (lsp lsp-deferred))
@@ -306,3 +305,8 @@ lsp-mode loads (early-init.el) and reinstall lsp-mode, lsp-ui, lsp-treemacs and 
 (load-file "~/.emacs.d/lsp/langs/c.el")
 (load-file "~/.emacs.d/lsp/langs/java.el")
 (load-file "~/.emacs.d/lsp/langs/scala.el")
+(load-file "~/.emacs.d/lsp/langs/haskell.el")
+(load-file "~/.emacs.d/lsp/langs/fsharp.el")
+(load-file "~/.emacs.d/lsp/langs/odin.el")
+(load-file "~/.emacs.d/lsp/langs/ada.el")
+(load-file "~/.emacs.d/lsp/langs/ats.el")

@@ -35,10 +35,17 @@
       sha256 = "sha256-aPeaGERAP1Fav2QAjZy1zXciCuUTQYrsqXaSQsYG0oU=";
     };
   };
+  # nixpkgs only builds the fsharp grammar; fsharp-ts-mode also wants fsharp_signature for .fsi files
+  tree-sitter-fsharp-signature = pkgs.tree-sitter.buildGrammar {
+    language = "fsharp-signature";
+    inherit (pkgs.tree-sitter-grammars.tree-sitter-fsharp) version src;
+    location = "fsharp_signature";
+  };
 in {
   home.packages = with pkgs; [
     csharp-ls
     netcoredbg
+    fsautocomplete
     rsync
 
     gprbuild
@@ -115,6 +122,9 @@ in {
         scala-ts-mode
         lsp-metals
         sbt-mode
+        haskell-ts-mode
+        lsp-haskell
+        fsharp-ts-mode
 
         # Dev
         exec-path-from-shell
@@ -215,6 +225,9 @@ in {
     ".emacs.d/tree-sitter/libtree-sitter-c-sharp.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-c-sharp}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-java.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-java}/parser";
     ".emacs.d/tree-sitter/libtree-sitter-scala.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-scala}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-haskell.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-haskell}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-fsharp.so".source = "${pkgs.tree-sitter-grammars.tree-sitter-fsharp}/parser";
+    ".emacs.d/tree-sitter/libtree-sitter-fsharp-signature.so".source = "${tree-sitter-fsharp-signature}/parser";
     
     ".emacs.d/basic_settings.el".source = ./basic_settings.el;
     ".emacs.d/early-init.el".source = ./early-init.el;
@@ -240,5 +253,10 @@ in {
     ".emacs.d/lsp/langs/c.el".source = ./lsp/langs/c.el;
     ".emacs.d/lsp/langs/java.el".source = ./lsp/langs/java.el;
     ".emacs.d/lsp/langs/scala.el".source = ./lsp/langs/scala.el;
+    ".emacs.d/lsp/langs/haskell.el".source = ./lsp/langs/haskell.el;
+    ".emacs.d/lsp/langs/fsharp.el".source = ./lsp/langs/fsharp.el;
+    ".emacs.d/lsp/langs/odin.el".source = ./lsp/langs/odin.el;
+    ".emacs.d/lsp/langs/ada.el".source = ./lsp/langs/ada.el;
+    ".emacs.d/lsp/langs/ats.el".source = ./lsp/langs/ats.el;
   };
 }
