@@ -17,10 +17,10 @@ Flag:
   `$VAR`, single quotes). On Windows the shell is cmdproxy.
 - Argument splitting/quoting: `split-string-shell-command`, `shell-quote-argument` on Windows treat
   backslashes literally (past bug: claude-code-ide MCP JSON broke; fixed via advice on
-  `shell-file-name-quote-list` in workflows.el).
+  `shell-file-name-quote-list` in emacs_elisp/workflows.el).
 - `executable-find` results assumed to exist, or program names without `.exe` passed to
   process-spawning code.
-- Packages that only come from Nix (nixpkgs trivialBuild in emacs.nix) required unconditionally;
+- Packages that only come from Nix (nixpkgs trivialBuild in modules/**/*.nix) required unconditionally;
   on Windows they come from ELPA or `package-vc-install`.
 - Tree-sitter grammars assumed present (`.so` paths); Windows uses `.dll`, built separately.
 - Native modules or PTY assumptions (ghostel, vterm, pdf-tools epdfinfo).

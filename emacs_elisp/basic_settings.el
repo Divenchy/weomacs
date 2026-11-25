@@ -16,15 +16,24 @@
 ;; Comment/uncomment this line to enable MELPA Stable if desired. 
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 
-;; Windows has no Nix: install the packages emacs.nix lists in `extraPackages' via package.el
+;; Windows has no Nix: install the packages the modules/ Nix files list in `extraPackages' via
+;; package.el. Copy the repo's modules/ folder to ~/.emacs.d/modules.
 (defun weo/nix-package-list ()
-  "Return the epkgs symbols listed in emacs.nix."
-  (with-temp-buffer
-    (insert-file-contents (locate-user-emacs-file "emacs.nix"))
-    (when (re-search-forward "(with epkgs; \\[\\(\\(?:.\\|\n\\)*?\\)])" nil t)
-      (mapcar #'intern (split-string (replace-regexp-in-string "#.*" "" (match-string 1)))))))
+  "Return the epkgs symbols listed in ~/.emacs.d/modules/**/*.nix."
+  (let (pkgs)
+    (dolist (file (directory-files-recursively (locate-user-emacs-file "modules") "\\.nix\\'"))
+      (with-temp-buffer
+        (insert-file-contents file)
+        (while (re-search-forward "with epkgs; \\[\\(\\(?:.\\|\n\\)*?\\)]" nil t)
+          (setq pkgs (append (split-string (replace-regexp-in-string "#.*" "" (match-string 1)))
+                             pkgs)))
+        (goto-char (point-min))
+        (while (re-search-forward "epkgs\\.\\([a-z0-9-]+\\)" nil t)
+          (unless (equal (match-string 1) "trivialBuild")
+            (push (match-string 1) pkgs)))))
+    (mapcar #'intern (delete-dups pkgs))))
 
-(when (and (eq system-type 'windows-nt) (file-exists-p (locate-user-emacs-file "emacs.nix")))
+(when (and (eq system-type 'windows-nt) (file-directory-p (locate-user-emacs-file "modules")))
   (let ((missing (seq-remove #'package-installed-p (weo/nix-package-list))))
     (when missing
       (package-refresh-contents)

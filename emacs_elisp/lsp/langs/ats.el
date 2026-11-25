@@ -1,6 +1,6 @@
 ;;; ats.el --- ATS2 language utilities -*- lexical-binding: t -*-
 
-;; ats2-mode.el (built in emacs.nix) provides `ats-mode', and trivialBuild generates no autoloads.
+;; ats2-mode.el (built in modules/langs/ats.nix) provides `ats-mode', and trivialBuild generates no autoloads.
 ;; patscc/patsopt come from nixweo. ats-mode binds C-c C-c to `compile' (patscc -tcats typecheck).
 (autoload 'ats-mode "ats2-mode" "Major mode to edit ATS2 source code." t)
 (add-to-list 'auto-mode-alist '("\\.\\(s\\|d\\|h\\)ats\\'" . ats-mode))

@@ -15,12 +15,12 @@ description: Conventions, checks and test commands for writing or changing Emacs
   `print-length`/`print-level` bound to nil, and read with `ignore-errors` around `read`.
 
 ## Checks
-Run them on the repo file, never on `~/.emacs.d` (read-only Nix store symlinks).
+Run them from `emacs_elisp/` on the repo file, never on `~/.emacs.d` (read-only Nix store symlinks).
 
 ```bash
 # compiler warnings; copy to the scratchpad so no .elc lands in the repo
 cp FILE.el "$SCRATCH"/ && emacs -Q --batch -f batch-byte-compile "$SCRATCH"/FILE.el; rm -f "$SCRATCH"/FILE.elc
-# ERT tests live in tests/NAME-test.el
+# ERT tests live in emacs_elisp/tests/NAME-test.el
 emacs -Q --batch -L . -l FILE.el -l tests/FILE-test.el -f ert-run-tests-batch-and-exit
 ```
 
@@ -28,9 +28,10 @@ Compare warnings against `git show HEAD:FILE.el` so only new warnings count. War
 optional packages (`posframe-*` not known to be defined) are expected under `-Q`.
 
 ## Deployed vs repo
-`init.el` loads `~/.emacs.d/*.el`, which home-manager symlinks from this repo via `emacs.nix`.
-Repo edits take effect only after the user runs `home-manager switch`. A new .el file needs an entry in
-`emacs.nix` (`".emacs.d/X.el".source = ./X.el;`) and a `load-file` line. Tests are not deployed.
+`init.el` loads `~/.emacs.d/*.el`, which home-manager symlinks from this repo from `emacs_elisp/` via the `modules/` Nix files.
+Repo edits take effect only after the user runs `home-manager switch`. A new .el file needs a `home.file` entry in
+the feature's `modules/**/*.nix` (`".emacs.d/X.el".source = ../emacs_elisp/X.el;`, path relative to the .nix
+file) and a `load-file` line (not for `lsp/langs/*.el`, which lsp.el loads by glob). Tests are not deployed.
 After edits, run the `verify-build` skill; after a rebuild, `/smoke-test` checks the deployed config.
 
 ## Live session

@@ -1,6 +1,6 @@
 ;;; ada.el --- Ada language utilities -*- lexical-binding: t -*-
 
-;; ada_language_server, gnat and alire come from nixweo; gprbuild from emacs.nix
+;; ada_language_server, gnat and alire come from nixweo; gprbuild from modules/langs/ada.nix
 
 ;;;; Build Commands (Alire, falling back to gprbuild)
 (defun weo/ada-project-root ()

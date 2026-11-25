@@ -1,6 +1,6 @@
 ---
 name: build-verifier
-description: Builds the current weomacs working tree in a throwaway HOME, batch-loads it, and reports errors that HEAD does not have. Read-only. Use via the verify-build skill after changing .el files or emacs.nix.
+description: Builds the current weomacs working tree in a throwaway HOME, batch-loads it, and reports errors that HEAD does not have. Read-only. Use via the verify-build skill after changing .el files or modules/**/*.nix.
 tools: Bash, Read, Grep, Glob
 ---
 

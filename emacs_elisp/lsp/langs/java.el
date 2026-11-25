@@ -1,6 +1,6 @@
 ;;; java.el --- Java language utilities -*- lexical-binding: t -*-
 
-;; java-ts-mode is built in; grammar is linked by emacs.nix
+;; java-ts-mode is built in; grammar is linked by modules/langs/java.nix
 (when (treesit-available-p)
   (add-to-list 'major-mode-remap-alist '(java-mode . java-ts-mode)))
 
