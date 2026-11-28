@@ -8,3 +8,9 @@
 ;; was set must be deleted and reinstalled. lsp/lsp.el warns on a mismatch.
 ;; https://emacs-lsp.github.io/lsp-mode/page/performance/#use-plists-for-deserialization
 (setenv "LSP_USE_PLISTS" "true")
+
+;; Tiling WMs (niri) ;;
+;; Keep the size the compositor gives each frame: don't snap to whole character cells, and don't
+;; grow the frame to keep its line/column count when fonts or bars change during init.
+(setq frame-resize-pixelwise t
+      frame-inhibit-implied-resize t)
