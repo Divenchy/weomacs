@@ -33,7 +33,7 @@ find "$src" -name '*.nix' -not -name flake.nix -not -path '*/.git/*' | while rea
     done
 done
 
-out=$(cd "$home" && HOME=$home timeout 180 emacs -Q --batch --eval \
+out=$(cd "$home" && HOME=$home XDG_RUNTIME_DIR=$work timeout 180 emacs -Q --batch --eval \
   '(progn (package-activate-all) (load-file "~/.emacs.d/init.el") (setq kill-emacs-hook nil))' 2>&1)
 status=$?
 

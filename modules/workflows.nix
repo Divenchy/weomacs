@@ -18,7 +18,7 @@
   in {
     programs.emacs.extraPackages = epkgs:
       (with epkgs; [
-        direnv
+        envrc
         magit
         projectile
         ghostel

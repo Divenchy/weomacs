@@ -172,3 +172,11 @@ never pairs.  Before a token char that can't be wrapped, no closer.  Otherwise e
   (add-to-list 'exec-path-from-shell-variables "LSP_USE_PLISTS")
   (when (memq window-system '(mac ns x pgtk))
     (exec-path-from-shell-initialize)))
+
+;; Server ;;
+;; nixweosl has no emacs daemon, so emacsclient needs a server in the editor itself.
+(use-package server
+  :unless (daemonp)                     ; the daemon starts its own after init
+  :config
+  (unless (server-running-p)
+    (server-start)))

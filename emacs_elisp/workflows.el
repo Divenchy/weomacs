@@ -1,8 +1,9 @@
 ;;; workflows.el --- Workflow utilities -*- lexical-binding: t -*-
 
-(use-package direnv
-  :config
-  (direnv-mode))
+;; Per-buffer env, cached per .envrc dir, so each project (workspace tab) keeps its own PATH.
+;; after-init: its hooks must run before other global modes look up executables.
+(use-package envrc
+  :hook (after-init . envrc-global-mode))
 
 ;; MAGIT ;;
 (use-package magit
